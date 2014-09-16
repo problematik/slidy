@@ -1,0 +1,73 @@
+canvas {
+	border: 1px solid black;
+	position: absolute;
+	background-color: transparent;
+}
+#box1 {
+	width: 150px;
+	height: 150px;
+	border: 1px solid black;
+	z-index: 199;
+  -ms-touch-action: none;
+}
+.pika {
+	width: 3px;
+	height: 3px;
+	position:absolute;
+	top:84px;
+	left:78px;
+	background-color: red;
+	z-index: 200;
+}
+#viewport {
+	position: relative;
+}
+.hidden {
+	display: none;
+}
+.show {
+	display: block;
+}
+
+#test-results {
+	position: absolute;
+	background-color: white;
+	top: 10;
+	left: 10;
+	border: black 1px solid;
+	padding: 4px;
+	list-style: none;
+}
+.cursorPointer {
+	cursor: pointer;
+}
+#test-results .show {
+	display: list-item;
+}
+#test-results .pass {
+	color: darkgreen;
+}
+#test-results .fail {
+	color: red;
+}
+#test-results .group {
+	font-weight: bold;
+}
+#test-results .expand-li {
+	margin-left: 5px;
+	font-size: 0.8em;
+	color: gray;
+}
+
+.edit-mode {
+	z-index: 1000;
+}
+.slider {
+	z-index: 999;
+}
+.slider-background {
+	z-index: 998;
+}
+.slidy-central {
+
+}
