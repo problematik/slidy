@@ -16,6 +16,8 @@
 	border: 1px solid black;
 	position: absolute;
 	background-color: transparent;
+	top: 0;
+	left: 0;
 }
 #box1 {
 	width: 150px;
@@ -37,7 +39,7 @@
 	position: relative;
 }
 .hidden {
-	display: none !important;
+	display: none;
 }
 .show {
 	display: block;
@@ -75,6 +77,15 @@
 
 .edit-mode {
 	z-index: 1000;
+	text-align: center;
+	left: 0;
+	right: 0;
+	height: 100%;
+	width: 100%;
+	vertical-align: middle;
+	display: table-cell;
+	font-size: 2em;
+	font-weight: bold;
 }
 .slider {
 	z-index: 999;
@@ -193,4 +204,3 @@ span.color {
 		top: 8px;
 	}
 }
-
