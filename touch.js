@@ -1,238 +1,322 @@
-(function(){
+(function () {
 
-	/**
-	 * Vektor
-	 *
-	 * @param e TouchEvent
-	 */
-	var Vektor = function(e)
-	{
-		this.x = 0;
-		this.y = 0;
+    // http://gianlucaguarini.github.io/Tocca.js/demo-fun.html
+    var TouchHandler = function (data) {
+        this.element = Z.element("testing");
 
-		if (e) {
-			this.nastaviKoordinate(e);
-		}
-	}
+        // http://stackoverflow.com/questions/4817029/whats-the-best-way-to-detect-a-touch-screen-device-using-javascript/4819886#4819886
+        var podpiramoTouch = 'ontouchstart' in window // works on most browsers
+                               || 'onmsgesturechange' in window; // works on ie10
 
-	/**
-	 * Nastavimo koordinate
-	 *
-	 * @param  vektor Vektor
-	 */
-	Vektor.prototype.nastaviKoordinate = function(vektor) {
-		this.x = vektor.x;
-		this.y = vektor.y;
-	}
+        // če je user v configu povedal da na touch dovolimo samo touch
+        this.mouseAllowed = data.mouseAllowed || podpiramoTouch ? false : true;
 
-	/**
-	 * Vektor, ki ga uporabljamo da določamo sredino sliderja
-	 *
-	 * @param element
-	 */
-	var VektorSredina = function(element) {
-		Vektor.call(this, element);
-	}
+        this.prejsni = {};
 
-	VektorSredina.prototype = Object.create(Vektor);
-	VektorSredina.prototype.constructor = VektorSredina;
+        // ali ima user tipko/prst dol
+        this.clicked = false;
+        // kolikokrat se je v tapCas zgodil klik
+        this.steviloClick = 0;
+        // id za timeout
+        this.tapTimer = 0;
+        // cas med dvema klikoma da se šteje kot klik
+        this.tapCas = 200;
+        // treshold za tap
+        this.tapZamik = 30;
 
-	/**
-	 * Vektorju nastavimo nove koordinate
-	 *
-	 * @param  element HTMLElement
-	 */
-	VektorSredina.prototype.nastaviKoordinate = function(element) {
+        this.prejX = this.prejY = this.zdajX = this.zdajY = null;
+        this.elementPrejX = this.elementPrejY = null;
 
-		var boxRect = element.getBoundingClientRect();
+        this.callbackId = 0;
+        this.callbacks = {};
+    }
 
-		// vracunamo pozicijo scrollBara
-		this.x = (boxRect.right - boxRect.width/2) - window.pageXOffset;
-		this.y = (boxRect.bottom - boxRect.height/2) - window.pageYOffset;
-	}
+    /**
+     * Dodamo element za katerega hocemo listenerje
+     *
+     * @param element Za kateri element gre
+     * @param callback Kaj naj se klico za vsak event
+     */
+    TouchHandler.prototype.add = function (element, callback) {
 
-	/**
-	 * Vektor ki ga uporabljamo za zaznavanje dotika
-	 *
-	 * @param e TouchEvent
-	 */
-	var VektorPremik = function(e) {
-		Vektor.call(this, e);
-	}
+        this.callbackId++;
 
-	VektorPremik.prototype = Object.create(Vektor);
-	VektorPremik.prototype.constructor = VektorPremik;
+        this.callbacks[this.callbackId] = {element: element, callback: callback};
 
-	/**
-	 * Vektorju nastavimo koordinate miške ali prejšnega vektorja
-	 */
-	VektorPremik.prototype.nastaviKoordinate = function(e) {
-		// premik touch
-		if (e.changedTouches) {
-			var touchobj = e.changedTouches[0];
+        this.bindHandlers(element);
 
-			this.x = parseInt(touchobj.clientX);
-			this.y = parseInt(touchobj.clientY);
-		}
-		// premik miške
-		else if (e.clientX) {
-			this.x = parseInt(e.clientX);
-			this.y = parseInt(e.clientY);
-		}
-		// prejšni vektor
-		else {
-			Vektor.prototype.nastaviKoordinate.call(this, e);
-		}
-	}
+        return this.callbackId;
+    }
 
-	/**
-	 * Hendlamo touch sliderja
-	 *
-	 * @param  element         HTMLElement
-	 * @param  callbackPremik  Kaj naj se kliče ko zaznamo premik
-	 * @param  callbackKonec   Kaj naj se kliče ko zaznamo da se ne dotikamo več
-	 */
-	this.HandleTouch = function(element, callbackPremik, callbackKonec)
-	{
-		if (!element) {
-			return;
-		}
+    TouchHandler.prototype.remove = function (id) {
 
-		// kaj naj klicemo ko imamo premik z določeno smerjo
-		this.callbackPremik = callbackPremik;
-		// kaj naj klicemo ko je uporabnik odmaknil/dvignil prst
-		this.callbackKonec = callbackKonec;
+        this.removeHandlers(id);
 
-		this.element = Z.element(element);
+        delete this.callbacks[id];
+    }
 
-		// podatki o prejšni miškini poziciji
-		this.vPrejsni = new VektorPremik();
-		// podatki o zdejšni miškini poziciji
-		this.vZdejsni = new VektorPremik();
-		// podatki o sredini
-		this.vSredina = new VektorSredina(element);
+    TouchHandler.prototype.dolociEvente = function () {
 
-		// če smo ustvarjeni je user kliknil z miško, tako mousedown=true
-		this.mouseClicked = false;
+        var events = {touchStart: "touchstart",
+                      touchMove: "touchmove",
+                      touchEnd: "touchend"}
 
-		this.handlers = {
-			touchstart : "touchStart",
-			mousedown : "mouseDown",
-			touchend : "touchEnd",
-			mouseup : "touchEnd",
-			touchmove : "touchMove",
-			mousemove : "touchMove"
-		};
+        if (this.mouseAllowed) {
+            events.touchStart += " mousedown";
+            events.touchMove += " mousemove";
+            events.touchEnd += " mouseup";
+        }
 
-		this.addListeners();
-	}
+        return events;
+    }
 
-	/**
-	 * Elementu this.element dodamo listenerje
-	 */
-	HandleTouch.prototype.addListeners = function(){
+    TouchHandler.prototype.bindHandlers = function (element) {
 
-		for (var e in this.handlers) {
-			Z.dodajEvent(this.element, e, this[this.handlers[e]].bind(this));
-		}
-	}
+        var events = this.dolociEvente();
 
-	/**
-	 * Odstranimo vse listenerje za this.element
-	 */
-	HandleTouch.prototype.removeListeners = function() {
+        for (var e in events) {
 
-		for (var e in this.handlers) {
-			Z.removeEvent(this.element, e, this[this.handlers[e]]);
-		}
-	}
+            var ee = events[e].split(" ");
+            var i = ee.length;
 
-	/**
-	 * Klican ko se začne touch event
-	 *
-	 * @param  e Touch event
-	 */
-	HandleTouch.prototype.touchStart = function(e) {
+            while(i--) {
+                Z.addEvent(element, ee[i], this[e].bind(this));
+            }
+        }
+    }
 
-		this.mouseClicked = true;
-		this.vPrejsni.nastaviKoordinate(e);
+    TouchHandler.prototype.removeHandlers = function (id) {
 
-		e.preventDefault();
-	}
+        var events = this.dolociEvente();
+        Z.removeEvent(this.callbacks[id].element);
 
-	/**
-	 * Klican ko se premikamo
-	 *
-	 * @param  e Mouse/Touch event
-	 */
-	HandleTouch.prototype.touchMove = function(e) {
+        delete this.callbacks[id];
+    }
 
-		if (this.mouseClicked === true) {
-			this.vZdejsni.nastaviKoordinate(e);
+    TouchHandler.prototype.getEventData = function(e) {
+        e.podpiramoTouch = this.podpiramoTouch;
+        e.tapZamik = this.tapZamik;
+        return e.targetTouches ? e.targetTouches[0] : e;
 
-			this.handlePremik(e);
+    }
 
-			e.preventDefault();
-		}
-	};
+    /**
+     * Preverimo ali je slucajno pri prislo do double tapa ali imamo navadni click
+     *
+     * @param  {[type]} e [description]
+     */
+    TouchHandler.prototype.handleClick = function(e) {
 
-	/**
-	 * Klican ko se touch konča
-	 *
-	 * @param  e Mouse/Touch event
-	 */
-	HandleTouch.prototype.touchEnd = function(e) {
-		this.mouseClicked = false;
-		this.callbackKonec();
-		e.preventDefault();
-	}
+        if(this.prejX >= this.zdajX - this.tapZamik &&
+           this.prejX <= this.zdajX + this.tapZamik &&
+           this.prejY >= this.zdajY - this.tapZamik &&
+           this.prejY <= this.zdajY + this.tapZamik &&
+           this.clicked === false) {
 
-	/**
-	 * Klican ko user pritisne gumb na miški
-	 *
-	 * @param  e Mouse Event
-	 */
-	HandleTouch.prototype.mouseDown = function(e){
+            e.what = (this.steviloClick === 2) ? "doubleTap" : "click";
 
-		this.vPrejsni.nastaviKoordinate(e);
+            for (var komu in this.callbacks) {
 
-		this.mouseClicked = true;
-		this.handlePremik(e);
+                this.callbacks[komu].callback(e);
+            }
 
-		e.preventDefault();
-	}
+            this.steviloClick = 0;
+        }
+    }
 
-	/**
-	 * Uporabnk je premaknil prst/miško
-	 *
-	 * @param e Touch/Mouse event
-	 */
-	HandleTouch.prototype.handlePremik = function(e) {
+    TouchHandler.prototype.touchStart = function (e) {
 
-		var smer = this.dolociSmerVrtenja(this.vSredina, this.vPrejsni, this.vZdejsni)
+        this.clicked = true;
+        this.steviloClick++;
 
-		this.callbackPremik(smer, e);
+        var data = this.getEventData(e);
 
-		this.vPrejsni.nastaviKoordinate(this.vZdejsni);
-	};
+        e = this.dobiPozicijoMiskeVElement(e);
 
-	/**
-	 * Določimo smer vrtenja
-	 *
-	 * @param  sredina  Vektor sredina
-	 * @param  prejsni  Vektor prejsnega dotika
-	 * @param  zdejsni  Vektor dotika
-	 *
-	 * @return -1|1; -1 = levo 1 = desno
-	 */
-	HandleTouch.prototype.dolociSmerVrtenja = function(sredina, prejsni, zdejsni) {
+        this.dolociSmer(e);
 
-		var smer = ((prejsni.x - sredina.x) * (zdejsni.y - sredina.y) - (prejsni.y - sredina.y) * (zdejsni.x - sredina.x));
+        this.prejX = this.zdajX = data.pageX;
 
-		if (smer > 0) {
-			return 1;
-		}
+        this.prejY = this.zdajY = data.pageY;
 
-		return -1;
-	};
+        this.elementPrejX = data.elementX;
+        this.elementPrejY = data.elementY;
+
+        clearTimeout(this.tapTimer);
+
+        this.tapTimer = setTimeout(this.handleClick.bind(this, e), this.tapCas);
+
+    }
+
+    TouchHandler.prototype.touchMove = function (e) {
+
+        if (this.clicked) {
+
+            var data = this.getEventData(e);
+
+            e = this.dobiPozicijoMiskeVElement(e);
+
+            this.prejX = this.zdajX;
+            this.prejY = this.zdajY;
+            this.zdajX = data.pageX;
+            this.zdajY = data.pageY;
+
+            e = this.dolociSmer(e);
+
+            this.elementPrejX = data.elementX;
+            this.elementPrejY = data.elementY;
+
+            e.what = "move";
+
+            e.preventDefault();
+            for (var komu in this.callbacks) {
+
+                this.callbacks[komu].callback(e);
+            }
+        }
+    }
+
+    TouchHandler.prototype.dobiPozicijoMiskeVElement = function(e) {
+
+        if (e.changedTouches) {
+            var touchobj = e.changedTouches[0];
+            var parent = e.changedTouches[0].target.getBoundingClientRect();
+
+            var y = touchobj.clientY - parent.top;
+            var x = touchobj.clientX - parent.left;
+
+        } else {
+
+            var parent = e.srcElement.getBoundingClientRect();
+
+            var y = e.clientY - parent.top;
+            var x = e.clientX - parent.left;
+
+        }
+
+        // nastavimo X in Y elementa
+        e.elementX = x;
+        e.elementY = y;
+
+        return e;
+    }
+
+    /**
+     * Določimo smer vrtenja
+     *
+     * @param  sredina Podatki o sredini - okoli česa se vrtimo
+     *
+     * @return -1|1; -1 = levo 1 = desno
+     */
+     TouchHandler.prototype.dolociSmer = function (e) {
+
+             var rect = e.srcElement.getBoundingClientRect();
+
+             var sirina = rect.width/2;
+             var visina = rect.height/2;
+
+
+
+         var x1 = e.elementX - sirina;
+         var y1 = e.elementY - visina;
+         var x2 = this.elementPrejX - sirina;
+         var y2 = this.elementPrejY - visina;
+
+         var kotZdaj = this.dolociKot(x1, y1);
+         var kotPrej = this.dolociKot(x2, y2);
+
+
+
+
+         if (kotZdaj < kotPrej) {
+             e.smer = -1;
+             e.smerOznaka = "levo";
+         } else {
+             e.smer = 1;
+             e.smerOznaka = "desno";
+         }
+
+         if (kotZdaj >= 359 && kotZdaj <= 360 && kotPrej >= 0 && kotPrej <= 1) {
+         console.group("NASTVLJAM");
+            console.log("ROBNA NASTAVLJENA NA -1 SMER", e.smer);
+            e.skoziRob = -1;
+            e.smer = -1;
+         console.groupEnd();
+         } else if (kotZdaj>= 0 && kotZdaj <= 1 && kotPrej >= 359 && kotPrej <= 360){
+            console.group("NASTVLJAM");
+            console.log("ROBNA NASTAVLJENA NA 1 SMER", e.smer);
+            e.skoziRob = 1;
+            e.smor = 1;
+         console.groupEnd();
+         }
+         e.elementSirina = sirina;
+         e.elementVisina = visina;
+         e.kot = kotZdaj;
+         e.kotPrej = kotPrej;
+         return e;
+     }
+
+    TouchHandler.prototype.dolociKot = function (e, ey) {
+
+        if (e.srcElement) {
+            var box = e.srcElement.getBoundingClientRect();
+
+            var sirina = box.width/2;
+            var visina = box.height/2;
+
+            var x = e.elementX - sirina;
+            var y = e.elementY - visina;
+
+            e.elementSirina = sirina;
+            e.elementVisina = visina;
+
+        } else {
+            var x = e
+            var y = ey;
+        }
+
+        var rad = Math.atan2(x, y);
+        // var rad = Math.atan2(x,y);
+
+        // prištejemo 90 da je origin med 3 in 4 - glej spodaj
+        var kot = rad * 180 / Math.PI + 90;
+
+        /**
+        *     |
+        *   3 | 4
+        * ----------
+        *   2 | 1
+        *     |
+        *
+        *  Ker obmocju 3 vraca negativne vrednosti
+        */
+        if (kot < 0) {
+            var kot = 270 + Math.abs(kot);
+            return kot;
+        }
+        var kot = Math.abs(270 - kot);
+        return kot;
+    }
+
+    TouchHandler.prototype.touchEnd = function (e) {
+
+        e.what = "clickEnd";
+
+        this.clicked = false;
+        this.elementVisina = null;
+        this.elementSirina = null;
+
+        e.preventDefault();
+        for (var komu in this.callbacks) {
+
+            this.callbacks[komu].callback(e);
+        }
+
+    }
+
+    Z.dodajEvent(Z.body(), "applicationLoaded", function(data){
+
+        window["touchHandler"] = new TouchHandler(data);
+
+    });
 })();
