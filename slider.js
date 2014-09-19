@@ -223,7 +223,7 @@
 	SliderCentral.prototype.sliderClicked = function(e) {
 
 		if (this.editMode === false) {
-			console.log("SMO NA KLIKU?");
+
 			// ker se lahko overlapajo gremo od ozadaj - top first
 			var dolzina = this.sliderji.length;
 
@@ -268,8 +268,11 @@
 
 		this.premikajoci.handlerId = window.touchHandler.add(this.ctxSlider.canvas, this.sliderUpdate.bind(this), {x: slider.data.x, y: slider.data.y});
 
+		this.premikajoci.draw();
+
 		this.ctxSliderji.pocistiCanvas();
 		this.ctxBackground.pocistiCanvas();
+
 		this.animate();
 	}
 
@@ -639,7 +642,6 @@
 	}
 
 	MoveableSlider.prototype.izrisiOK = function(){
-		console.log("OK klican");
 		Z.fireEvent(Z.body(), new Z.event("sliderCanEndEdit", {value: this.data.value}));
 	}
 
@@ -653,9 +655,11 @@
 			window.cancelAnimationFrame(sliderCentral.requestAnimationFrameId);
 			touchHandler.remove(this.handlerId);
 			sliderCentral.editMode = false;
+
 			Z.zamenjajClass(sliderCentral.ctxSlider.canvas, "show", "hidden");
 			Z.zamenjajClass(sliderCentral.ctxBackground.canvas, "show", "hidden");
 			Z.zamenjajClass(sliderCentral.ctxSliderji.canvas, "hidden", "show");
+
 			Z.fireEvent(Z.body(), new Z.event("sliderEditingEnd"));
 			Z.fireEvent(Z.body(), new Z.event("expenseEdited", this.data.id));
 			Z.fireEvent(Z.body(), new Z.event("expense-"+this.data.id+"-edited", this.data));
@@ -713,7 +717,7 @@
 		} else if (e.what === "clickEnd") {
 			this.skoziRob = false;
 			clearTimeout(this.editTimeoutCounter);
-			this.editTimeoutCounter = setTimeout(this.izrisiOK.bind(this), 2500);
+			this.editTimeoutCounter = setTimeout(this.izrisiOK.bind(this), this.data.editModeTimeout || 2500);
 		}
 		return;
 	}
