@@ -35,7 +35,7 @@ naslednji "slidy-i-hrana2" itd...
 - Za izvajanje testov klikni tu [tests]
 
 [demo]:http://problematik.github.io/slidy/src
-[tests]:http://problematik.github.io/slidy/tests
+[tests]:http://problematik.github.io/slidy/test
 
 *Za testiranje se uporablja lasten mini testing framework*
 
