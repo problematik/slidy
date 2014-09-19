@@ -1,4 +1,18 @@
-canvas {
+.slidy-central {
+	width: 960px;
+	margin: 0 auto;
+}
+
+.canvas-wrapper {
+	float: right;
+	position: relative;
+	width: 780px;
+	height: 780px;
+	display: table;
+	padding: 0px;
+}
+.canvas-wrapper canvas {
+	padding: 0px;
 	border: 1px solid black;
 	position: absolute;
 	background-color: transparent;
@@ -23,7 +37,7 @@ canvas {
 	position: relative;
 }
 .hidden {
-	display: none;
+	display: none !important;
 }
 .show {
 	display: block;
@@ -71,3 +85,112 @@ canvas {
 .slidy-central {
 
 }
+.slidy-dodaj{
+	z-index: 1010;
+	width: 160px;
+}
+.color-background {
+	margin: 3px;
+	position: relative;
+}
+.color {
+	position: absolute;
+}
+.slidy-colors {
+	margin-top: 3px;
+	width: 160px;
+	background-color: white;
+}
+.color-block {
+	width: 32px;
+	height: 32px;
+	display: inline-block;
+}
+.slidy-manager {
+	float:left;
+}
+span.color {
+	margin-left: -1px;
+	margin-top: -1px;
+}
+.slidy-colors .izbran {
+	box-sizing:border-box;
+	  -moz-box-sizing:border-box;
+	  -webkit-box-sizing:border-box;
+	border: 1px solid black;
+}
+
+.colors .neizbran {
+	border: none;
+}
+.slidy-dodaj label input {
+	display: block;
+}
+.slidy-dodaj input[type="text"], .slidy-dodaj input[type="number"], .slidy-dodaj input[type="string"] {
+	width: 149px;
+}
+.expense-value {
+	font-size: 2em;
+}
+.slidy-expense {
+	width: 160px;
+	word-break: break-all;
+}
+.slidy-expense span {
+	height: 10px;
+}
+.expenses-name {
+	font-size: 1.4em;
+}
+
+.clear-both {
+	clear: both;
+}
+.unselect {
+	-moz-user-select: -moz-none;
+	-khtml-user-select: none;
+	-webkit-user-select: none;
+
+	/*
+	 Introduced in IE 10.
+	 See http://ie.microsoft.com/testdrive/HTML5/msUserSelect/
+	*/
+	-ms-user-select: none;
+	user-select: none;
+}
+.show-btn {
+	display: inline-block;
+}
+@media screen and (max-width: 980px) {
+	.canvas-ok {
+		position: absolute;
+		left: 30px;
+		top: 370px;
+	}
+	.canvas-wrapper {
+		width: 100%;
+		float: none;
+		top: 8px;
+	}
+	.slidy-central {
+		width: 95%;
+	}
+	.slidy-manager {
+		width: 95%;
+		margin: 0 20px;
+	}
+	.slidy-dodaj {
+		display: inline-block;
+	}
+	.slidy-expenses {
+		display: inline-block;
+		width: 60%;
+	}
+}
+@media screen and (max-width: 480px) {
+	.canvas-wrapper {
+		width: 480px;
+		top: 8px;
+	}
+}
+
