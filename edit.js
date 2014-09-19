@@ -11,12 +11,8 @@
 
     EditMode.prototype.prenehamoZEditom = function (e) {
         this.element.innerHTML = "OK?";
-        Z.addEvent(this.element, "click", function(){
-            console.log("YES");
-        })
     }
     EditMode.prototype.izrisiValue = function (e) {
-        console.log("dobil za izrisat", e);
         this.element.innerHTML = Math.floor(e.data.value);
     }
 
