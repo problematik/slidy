@@ -251,8 +251,20 @@
 		}
 	}
 
-	SliderCentral.prototype.goToEditMode = function(slider, i) {
+	SliderCentral.prototype.disableScroll = function() {
+		Z.zamenjajClass(this.ctxSliderji.canvas, "scroll", "noscroll");
+		Z.zamenjajClass(this.ctxBackground.canvas, "scroll", "noscroll");
+		Z.zamenjajClass(this.ctxSlider.canvas, "scroll", "noscroll");
+	}
 
+	SliderCentral.prototype.enableScroll = function() {
+		Z.zamenjajClass(this.ctxSliderji.canvas, "noscroll", "scroll");
+		Z.zamenjajClass(this.ctxBackground.canvas, "noscroll", "scroll");
+		Z.zamenjajClass(this.ctxSlider.canvas, "noscroll", "scroll");
+	}
+
+	SliderCentral.prototype.goToEditMode = function(slider, i) {
+		this.disableScroll();
 
 		Z.zamenjajClass(this.ctxSliderji.canvas, "show", "hidden");
 		Z.zamenjajClass(this.ctxBackground.canvas, "hidden", "show");
@@ -652,6 +664,7 @@
 			e.elementY >= this.data.y - 20 &&
 			e.elementY <= this.data.y + 20)
 		{
+			sliderCentral.enableScroll();
 			window.cancelAnimationFrame(sliderCentral.requestAnimationFrameId);
 			touchHandler.remove(this.handlerId);
 			sliderCentral.editMode = false;
@@ -693,10 +706,10 @@
 						var robnaVrednost;
 						var vrednost;
 						if ((robnaVrednost = this.preveriRobneVrednosti(e, razlika, e.smer)) !== false) {
-							console.log("smo sli cez rob");
+
 							vrednost = robnaVrednost;
 						} else {
-							console.log("Nastavil vrednost na", this.data.value + razlika);
+
 							vrednost = this.data.value + razlika;
 						}
 
@@ -712,7 +725,7 @@
 				}
 
 				this.updateInProgress = false;
-				console.groupEnd();
+				
 			}
 		} else if (e.what === "clickEnd") {
 			this.skoziRob = false;
@@ -738,10 +751,10 @@
 
 		if (this.skoziRob !== false){
 			if (e.smer === -1) {
-				console.log("vracam 0")
+				
 				return 0;
 			} else {
-				console.log("vracam range")
+				
 				return this.data.range;
 			}
 		}
@@ -834,11 +847,6 @@
 		// zadnja sprememba .....
 		this.needsUpdate = false;
 		this.ctx.clearRect(this.data.cleanX, this.data.cleanY, this.data.cleanW, this.data.cleanH);
-		this.ctx.beginPath();
-		this.ctx.arc(this.miskaX,this.miskaY, 25, 0, toRadian(360));
-		this.ctx.fill();
-		console.log("IZRISAL KROG?", this.miskaX, this.miskaY);
-		this.ctx.closePath();
 
 		// ponovno izrišemo
 		this.izrisiSlider(this.ctx, this.data.zacetek, this.data.kot, this.data.barva);

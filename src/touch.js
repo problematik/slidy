@@ -144,6 +144,9 @@
 
         clearTimeout(this.tapTimer);
 
+        e.preventDefault();
+        e.returnValue = false
+
         this.tapTimer = setTimeout(this.handleClick.bind(this, e), this.tapCas);
 
     }
@@ -169,11 +172,15 @@
             e.what = "move";
 
             e.preventDefault();
+            e.returnValue = false
+
             for (var komu in this.callbacks) {
 
                 this.callbacks[komu].callback(e);
             }
         }
+
+        return;
     }
 
     TouchHandler.prototype.dobiPozicijoMiskeVElement = function(e) {
@@ -307,10 +314,14 @@
         this.elementSirina = null;
 
         e.preventDefault();
+        e.returnValue = false
+
         for (var komu in this.callbacks) {
 
             this.callbacks[komu].callback(e);
         }
+
+        return;
 
     }
 

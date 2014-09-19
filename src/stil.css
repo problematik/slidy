@@ -24,7 +24,7 @@
 	height: 150px;
 	border: 1px solid black;
 	z-index: 199;
-  -ms-touch-action: none;
+  	-ms-touch-action: none;
 }
 .pika {
 	width: 3px;
@@ -168,6 +168,20 @@ span.color {
 	*/
 	-ms-user-select: none;
 	user-select: none;
+}
+.scroll {
+	-ms-touch-action: auto;
+	touch-action: auto;
+	-webkit-touch-action: auto;
+	-moz-touch-action: auto;
+	-khtml-touch-action: auto;
+}
+.noscroll {
+	-ms-touch-action: none;
+	touch-action: none;
+	-webkit-touch-action: none;
+	-moz-touch-action: none;
+	-khtml-touch-action: none;
 }
 .show-btn {
 	display: inline-block;
