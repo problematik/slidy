@@ -56,6 +56,7 @@
 
 	var nextGuid = 1;
 
+	// TODO: move to touch.js
 	// Ker MS groupira Touch Event-e skupaj z Mouse in Pen Event-i v Pointer Evente jih tukaj map-amo na touch evente
 	var touchTypeZaZamenjavo = {
 		touchstart: ["MSPointerDown", "pointerdown"],
@@ -409,7 +410,8 @@
 	 * @param   data Podatki za event
 	 */
 	Z.event = function(elem, type, data) {
-		if (data === undefined && type && elem) {
+
+		if (data === undefined && type !== undefined && elem !== undefined) {
 			this.type = elem;
 			this.data = type;
 		} else if (elem && type == undefined) {
