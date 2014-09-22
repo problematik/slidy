@@ -303,20 +303,30 @@
 		}
 		var data = {};
 
+		// helper za prikaz errorja
+		var showError = function (element, value) {
+			if (value === undefined) {
+				value = Z.getData(element).error;
+			}
+			if (element.parentNode.childNodes.length === 2) {
+				Z.create("div", null, {className: "error", innerHTML: value}, element.parentNode);
+			} else {
+				element.parentNode.childNodes[2].innerHTML = value;
+				Z.zamenjajClass(element.parentNode.childNodes[2], "hidden", "error");
+			}
+		}
+
 		// preverimo vrednosti v inputih
 		var preveriInpute = function() {
 			var errorFree = true;
 			for (var i = 0; i < elements.length; i++) {
 
 				var element = elements[i];
+
 				// uporabnik ni vnesel ničesar
 				if (element.value.length === 0 || element.value === "") {
 					errorFree = false;
-					if (element.parentNode.childNodes.length === 2) {
-						Z.create("div", null, {className: "error", innerHTML: Z.getData(element).error}, element.parentNode);
-					} else {
-						Z.zamenjajClass(element.parentNode.childNodes[2], "hidden", "error");
-					}
+					showError(element);
 				} else {
 					if (element.parentNode.childNodes.length === 3) {
 						Z.zamenjajClass(element.parentNode.childNodes[2], "error", "hidden");
@@ -324,15 +334,19 @@
 
 					if (element.type === "number") {
 
-						if ((parseFloat(element.value) < 0) || isNaN(parseFloat(element.value, 10))) {
-							Z.zamenjajClass(element.parentNode.childNodes[2], "hidden", "error");
+						if (element.name === "polmer" && parseFloat(element.value, 10) < 70) {
+							errorFree = false;
+							showError(element, "Polmer mora biti večji ali enak 70");
+						}
+
+						if ((parseFloat(element.value, 10) <= 0) || isNaN(parseFloat(element.value, 10))) {
+							showError(element);
 							errorFree = false;
 						}
 
 						data[element.name] = parseFloat(element.value, 10);
 
 					} else {
-
 						data[element.name] = element.value;
 					}
 				}
