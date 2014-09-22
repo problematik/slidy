@@ -290,6 +290,7 @@
 		Z.zamenjajClass(this.ctxSlider.canvas, "hidden", "show");
 
 		if (this.premikajoci === null) {
+			slider.data.editModeTimeout = this.data.editModeTimeout;
 			this.premikajoci = new MoveableSlider(this.ctxSlider, this.ctxBackground, slider.data);
 			this.premikajoci.handlerId = window.touchHandler.add(this.ctxSlider.canvas, this.handleTouchOnCanvas.bind(this));
 		}
@@ -474,14 +475,14 @@
 		ctx.beginPath();
 
 		//izrisemo obrobo
-		ctx.arc(this.krogX, this.krogY, this.data.krogRob , 0, r360)
+		ctx.arc(this.krogX, this.krogY, this.data.krogRob , 0, R360)
 		ctx.fillStyle = this.data.krogBarvaObroba;
 		ctx.fill();
 		ctx.closePath();
 
 		// izrisemo krog
 		ctx.beginPath();
-		ctx.arc(this.krogX, this.krogY, this.data.krogPolmer, 0, r360);
+		ctx.arc(this.krogX, this.krogY, this.data.krogPolmer, 0, R360);
 		ctx.fillStyle = this.data.krogBarva;
 		ctx.fill();
 		ctx.closePath();
@@ -579,6 +580,8 @@
 
 		// da animate ne izrisuje ampak samo takrat ko se je kaj spremenilo
 		this.needsUpdate = false;
+
+		this.countdown = new Countdown(ctx, data, data.editModeTimeout, this.countdownEnd.bind(this), this.onCountdownStart.bind(this));
 	};
 
 	MoveableSlider.prototype = Object.create(Slider.prototype);
@@ -628,42 +631,34 @@
 		this.izrisiKrogNaSliderju(this.ctx);
 	}
 
-	/**
-	 * Izrisemo ok ko je minilo 3 sekunde od zadnjege interakcije z canvasom
-	 * @return {[type]} [description]
-	 */
-	MoveableSlider.prototype.izrisiOK = function(){
-		Z.fireEvent(Z.body(), new Z.event("sliderCanEndEdit", {value: this.data.value}));
+	MoveableSlider.prototype.onCountdownStart = function() {
+		Z.fireEvent(Z.body(), new Z.event("sliderEditingEnd"));
 	}
 
-	/**
-	 * Preverimo ali je uporabnik kliknil na OK?
-	 *
-	 * @param  {[type]} e [description]
-	 */
-	MoveableSlider.prototype.preveriZaKlikNaOk = function(e) {
+	MoveableSlider.prototype.zacniCountdown = function() {
+		this.countdown.go();
+	}
 
-		if (e.elementX >= this.data.x - 20 &&
-			e.elementX <= this.data.x + 20 &&
-			e.elementY >= this.data.y - 20 &&
-			e.elementY <= this.data.y + 20)
-		{
-			sliderCentral.enableScroll();
+	MoveableSlider.prototype.prekiniCountdown = function() {
+		this.countdown.clear();
+		Z.fireEvent(Z.body(), new Z.event("sliderEditingStart", {value: this.data.value}));
+	}
 
-			window.cancelAnimationFrame(sliderCentral.requestAnimationFrameId);
+	MoveableSlider.prototype.countdownEnd = function() {
+		sliderCentral.enableScroll();
 
-			sliderCentral.editMode = false;
+		window.cancelAnimationFrame(sliderCentral.requestAnimationFrameId);
 
-			Z.zamenjajClass(sliderCentral.ctxSlider.canvas, "show", "hidden");
-			Z.zamenjajClass(sliderCentral.ctxBackground.canvas, "show", "hidden");
-			Z.zamenjajClass(sliderCentral.ctxSliderji.canvas, "hidden", "show");
+		sliderCentral.editMode = false;
 
-			// TODO: reduce?
-			Z.fireEvent(Z.body(), new Z.event("sliderEditingEnd"));
-			Z.fireEvent(Z.body(), new Z.event("expenseEdited", this.data.id));
-			Z.fireEvent(Z.body(), new Z.event("expense-"+this.data.id+"-edited", this.data));
+		Z.zamenjajClass(sliderCentral.ctxSlider.canvas, "show", "hidden");
+		Z.zamenjajClass(sliderCentral.ctxBackground.canvas, "show", "hidden");
+		Z.zamenjajClass(sliderCentral.ctxSliderji.canvas, "hidden", "show");
 
-		}
+		// TODO: reduce?
+		Z.fireEvent(Z.body(), new Z.event("sliderEditingEnd"));
+		Z.fireEvent(Z.body(), new Z.event("expenseEdited", this.data.id));
+		Z.fireEvent(Z.body(), new Z.event("expense-"+this.data.id+"-edited", this.data));
 	}
 
 	/**
@@ -672,10 +667,11 @@
 	 * @param  e TouchEvent
 	 */
 	MoveableSlider.prototype.update = function(e) {
+
 		if ((e.what === "click" || e.what === "move" || e.what === "doubleTap") ) {
 
 			if (e.what === "move") {
-				clearTimeout(this.editTimeoutCounter);
+				this.prekiniCountdown();
 			}
 
 			if (this.updateInProgress === false) {
@@ -685,7 +681,7 @@
 				// ker lahko user vrti zunaj kroga/kroznice
 				if (this.preveriAliJePozicijaMiskeNaKrogu(e, e.tapZamik) || e.what === "move") {
 
-					clearTimeout(this.editTimeoutCounter);
+					this.prekiniCountdown();
 
 					var razlika = this.preracunajRazlikoGledeNaKot(e);
 
@@ -708,8 +704,7 @@
 			}
 		} else if (e.what === "clickEnd") {
 
-			clearTimeout(this.editTimeoutCounter);
-			this.editTimeoutCounter = setTimeout(this.izrisiOK.bind(this), this.data.editModeTimeout || 2500);
+			this.zacniCountdown();
 
 		}
 
@@ -780,6 +775,152 @@
 		this.izrisiKrogNaSliderju(this.ctx);
 	}
 
+
+	/**
+	 * ################################################################################################
+	 * #																							  #
+	 * #											COUNTDOWN       								  #
+	 * #																							  #
+	 * ################################################################################################
+	 */
+
+	 /**
+	  * Countdown da gremo iz edit mode v navaden mode
+	  * Na zadnji user interaction z canvasom se začne countdown, ko preteče se kliče callback
+	  *
+	  * @param ctx Kam izrisujemo
+	  * @param data Podatki za izrisovanje
+	  * @param time Cas za odstevanje
+	  * @param callback Kaj se klice ko koncamo
+	  */
+	this.Countdown = function(ctx, data, time, callback, onStart) {
+		this.ctx = ctx;
+		this.step = time/4;
+		this.data = data;
+		this.callback = callback;
+
+		this.korakNaVrsti = 0;
+		this.timeoutID = 0;
+
+		this.izracunajPodatke();
+
+		this.inProgress = false;
+		this.onStart = onStart;
+	}
+
+	/**
+	 * Izracunamo pozicijo izrisovanja countdowna
+	 *
+	 * @param data Ce podamo data overwritamo this.data
+	 */
+	Countdown.prototype.izracunajPodatke = function(data) {
+
+		if (data !== undefined) {
+			this.data = data;
+		}
+
+		if (this.data.x === undefined) {
+			this.data.x = this.ctx.canvas.width/2;
+		}
+
+		if (this.data.y === undefined) {
+			this.data.y = this.ctx.canvas.height/2;
+		}
+
+		if (this.data.barvaCountdown === undefined) {
+			this.data.barvaCountdown = "rgba(128,128,128, 0.3)";
+		}
+
+		if (this.data.barvaCountdownPassed === undefined) {
+			this.data.barvaCountdownPassed = "rgba(128,128,128, 0.7)";
+		}
+
+		this.pozX = this.data.x - 45/2-3;
+		this.inProgress = false;
+	}
+
+	/**
+	 * Zacnemo countdown
+	 */
+	Countdown.prototype.go = function() {
+		if (this.inProgress === false) {
+			this.korakNaVrsti = 0;
+			this.inProgress = true;
+			this.countdown();
+		}
+	}
+
+	/**
+	 * En korak countdowna
+	 */
+	Countdown.prototype.countdown = function() {
+
+		if (this.korakNaVrsti === 0) {
+			this.timeoutID = setTimeout(this.countdown.bind(this), this.step);
+		} else if (this.korakNaVrsti === 1) {
+			this.onStart();
+		}
+
+		if (this.korakNaVrsti > 0 && this.korakNaVrsti < 5) {
+			this.do();
+			this.timeoutID = setTimeout(this.countdown.bind(this), this.step);
+		}
+		this.korakNaVrsti++;
+	}
+
+	/**
+	 * Izrisemo timer ali klicemo callback
+	 */
+	Countdown.prototype.do = function() {
+		if (this.korakNaVrsti < 4) {
+			this.izrisiKroge();
+		} else {
+			this.inProgress = false;
+			this.callback();
+		}
+	}
+
+	/**
+	 * Pocistimo za seboj
+	 */
+	Countdown.prototype.pocisti = function() {
+		this.ctx.clearRect(this.pozX-13, this.data.y-7, 3*25, 14);
+	}
+
+	/**
+	 * Izrisemo kroge za countdown
+	 */
+	Countdown.prototype.izrisiKroge = function() {
+
+		this.pocisti();
+
+		for(var i = 0; i < 3; i++) {
+
+			this.ctx.beginPath();
+			// izrisemo poln krogec
+			if (i < this.korakNaVrsti) {
+				this.ctx.fillStyle = this.data.barvaCountdownPassed;
+			}
+			// izrisemo prazen krogec
+			else {
+				this.ctx.fillStyle = this.data.barvaCountdown;
+			}
+			this.ctx.arc(this.pozX + i * 25, this.data.y, 6, 0, R360);
+			this.ctx.fill();
+			this.ctx.closePath();
+		}
+	}
+
+	/**
+	 * Prekinemo countdown
+	 */
+	Countdown.prototype.clear = function() {
+		clearTimeout(this.timeoutID);
+		this.pocisti();
+		this.korakNaVrsti = 0;
+		this.inProgress = false;
+	}
+
 	/**
 	 * ################################################################################################
 	 * #																							  #
@@ -798,7 +939,7 @@
 		return kot * Math.PI / 180;
 	}
 	// da nam ni potrebno vsakič tega računat
-	var r360 = toRadian(360);
+	var R360 = toRadian(360);
 
 	/**
 	 * Dobimo dolzino kroznega loka za polmer in kot
