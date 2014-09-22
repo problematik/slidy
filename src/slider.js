@@ -1,6 +1,3 @@
-// kdo = sliderCentral.premikajoci
-// tar = {}; tar.getBoundingClientRect = function(){return {right:505, bottom: 640, top: 306, left: 8}};
-// MoveableSlider.prototype.izracunajKot.call(kdo, {changedTouches: [{clientX:10, clientY: 10, pageY:306+260, pageX: 8 + 260 , target: tar}]})
 (function(){
 
 	/**
@@ -28,8 +25,6 @@
 		this.premikajoci = null;
 		// ali urejamo
 		this.editMode = false;
-		// id funkcija za time
-		this.editModeTimeoutID = null;
 
 		// Canvasom dodamo pocistiCanvas
 		// da nam ne bo potrebno tega kasneje preračunavati in zato da imajo
@@ -58,12 +53,16 @@
 		window["sliderCentral"] = new SliderCentral(e.data);
 	});
 
+	/**
+	 * Bindamo listenerje
+	 *
+	 */
 	SliderCentral.prototype.dodajListenerje = function() {
-		// bindamo še vse za nas zanimive evente
 		Z.dodajEvent(Z.body(), "expenseAdded", this.dodajSlider.bind(this));
 		Z.dodajEvent(Z.body(), "expenseRemoved", this.odstraniSlider.bind(this));
 		Z.dodajEvent(Z.body(), "expenseEdited", this.updateSlider.bind(this));
-		Z.dodajEvent(this.data.canvasElement, "click", this.sliderClicked.bind(this));
+		// Z.dodajEvent(this.data.canvasElement, "click", this.handleClickNaCanvas.bind(this));
+		window.touchHandler.add(this.data.canvasElement, this.handleClickNaCanvas.bind(this));
 		Z.dodajEvent(window, "resize", this.windowResized.bind(this));
 	}
 
@@ -83,12 +82,12 @@
 			this.data.x = this.data.width/2;
 			this.data.y = this.data.height/2;
 
-			var canvasi = ["canvasSliderji", "canvasBackground", "canvasSlider"];
+			var canvasi = [this.data.canvasSliderji, this.data.canvasBackground, this.data.canvasSlider];
 
 			// nastavimo nove dimenzije canvasom
 			for (var i = 0; i < canvasi.length; i++) {
 
-				var element = Z.element(this.data[canvasi[i]]);
+				var element = canvasi[i];
 				element.style.width = this.data.width;
 				element.style.height = this.data.height;
 				element.width = this.data.width;
@@ -137,8 +136,10 @@
 
 			return Z.create("canvas", id, data, this.data.canvasElement);
 		};
+
 		var that = this;
-		// kaj naj se ustvari
+
+		// kaj naj se ustvari če ni podano
 		var defaults = {
 			sliderCanvasPrefix: "slider",
 			canvasElement: function(){return Z.create("div", application.preFix + "-canvas-wrapper", {className: "canvas-wrapper"}, application.rootElement)},
@@ -154,8 +155,8 @@
 		}
 
 		for (var att in defaults) {
-			if (this.data[att] === undefined) {
 
+			if (this.data[att] === undefined) {
 				if (typeof defaults[att] === "function") {
 					this.data[att] = defaults[att]();
 				} else {
@@ -167,9 +168,6 @@
 		Z.create("div", null, {className: "clear-both"}, application.rootElement);
 	}
 
-	SliderCentral.prototype.sprejmiVrednost = function() {
-		console.log("klikjen");
-	}
 	/**
 	 * Uporabnik je dodal nov expense, čas da izrišemo nov slider
 	 *
@@ -210,6 +208,9 @@
 		}
 	}
 
+	/**
+	 * En izmed expensov je bil spremenjen
+	 */
 	SliderCentral.prototype.updateSlider = function() {
 
 		this.ctxSliderji.pocistiCanvas();
@@ -220,7 +221,12 @@
 		}
 	}
 
-	SliderCentral.prototype.sliderClicked = function(e) {
+	/**
+	 * Handlamo click na canvas z sliderji
+	 *
+	 * @param  {[type]} e [description]
+	 */
+	SliderCentral.prototype.handleClickNaCanvas = function(e) {
 
 		if (this.editMode === false) {
 
@@ -231,15 +237,16 @@
 
 				var slider = this.sliderji[i];
 
+				// klik je na sliderji
 				if (slider.preveriAliJePozicijaMiskeNaKrogu(e)){
 
 					this.editMode = true;
 
-					// izrisujemo vse na enem canvasu
+					// izrisujemo vse na enem canvasu - default
 					if (this.data.izrisovanje === 1){
 
 						this.ctxSliderji.pocistiCanvas();
-						this.goToEditMode(slider, i);
+						this.goToEditMode(slider);
 
 					} else {
 						// ne še :D
@@ -251,34 +258,48 @@
 		}
 	}
 
+	/**
+	 * Ko smo v edit mode izklopimo scroll
+	 */
 	SliderCentral.prototype.disableScroll = function() {
 		Z.zamenjajClass(this.ctxSliderji.canvas, "scroll", "noscroll");
 		Z.zamenjajClass(this.ctxBackground.canvas, "scroll", "noscroll");
 		Z.zamenjajClass(this.ctxSlider.canvas, "scroll", "noscroll");
 	}
 
+	/**
+	 * Vklopimo ga nazaj
+	 */
 	SliderCentral.prototype.enableScroll = function() {
 		Z.zamenjajClass(this.ctxSliderji.canvas, "noscroll", "scroll");
 		Z.zamenjajClass(this.ctxBackground.canvas, "noscroll", "scroll");
 		Z.zamenjajClass(this.ctxSlider.canvas, "noscroll", "scroll");
 	}
 
-	SliderCentral.prototype.goToEditMode = function(slider, i) {
+	/**
+	 * Slider je bil kliknjen
+	 * @param  slider Slider
+	 * @return {[type]}        [description]
+	 */
+	SliderCentral.prototype.goToEditMode = function(slider) {
+
 		this.disableScroll();
 
 		Z.zamenjajClass(this.ctxSliderji.canvas, "show", "hidden");
 		Z.zamenjajClass(this.ctxBackground.canvas, "hidden", "show");
 		Z.zamenjajClass(this.ctxSlider.canvas, "hidden", "show");
 
-		this.premikajoci = new MoveableSlider(this.ctxSlider, this.ctxBackground, slider.data);
+		if (this.premikajoci === null) {
+			this.premikajoci = new MoveableSlider(this.ctxSlider, this.ctxBackground, slider.data);
+			this.premikajoci.handlerId = window.touchHandler.add(this.ctxSlider.canvas, this.handleTouchOnCanvas.bind(this));
+		}
 
 		this.premikajoci.nastaviData(slider.data);
 
 		requestAnimationFrame(this.premikajoci.izrisiOzadje.bind(this.premikajoci, this.ctxBackground));
 
-		Z.fireEvent(Z.body(), new Z.event("sliderEditingStart", {value: slider.data.value}));
 
-		this.premikajoci.handlerId = window.touchHandler.add(this.ctxSlider.canvas, this.sliderUpdate.bind(this), {x: slider.data.x, y: slider.data.y});
+		Z.fireEvent(Z.body(), new Z.event("sliderEditingStart", {value: slider.data.value}));
 
 		this.premikajoci.draw();
 
@@ -288,23 +309,20 @@
 		this.animate();
 	}
 
-	SliderCentral.prototype.sliderUpdate = function(smer, e) {
-		clearTimeout(this.editModeTimeoutID);
-
-		this.premikajoci.update(smer, e);
+	/**
+	 * User je imel interakcijo z canvasom
+	 *
+	 * @param  {[type]} e    [description]
+	 */
+	SliderCentral.prototype.handleTouchOnCanvas = function(e) {
+		this.premikajoci.update(e);
 	}
 
-	SliderCentral.prototype.konecTouch = function() {
-		this.premikajoci.updateCount = 0;
-
-		this.editModeTimeoutID = setTimeout(function(){
-
-			// this.editMode = false;
-			// fire event
-			//
-		}, this.data.editModeTimeout);
-	}
-
+	/**
+	 * Ponovno izrisemo
+	 *
+	 * @param  {[type]} id [description]
+	 */
 	SliderCentral.prototype.animate = function(id) {
 
 		this.requestAnimationFrameId = window.requestAnimationFrame(this.animate.bind(this));
@@ -341,8 +359,8 @@
 	};
 
 	// optimalna dolzina in razmik glede na try&error za r=100
-	var ozadjeDolzinaObarvanegaDela = 8.726646259971647; // α = 5°
-	var ozadjeRazmik = 10.471975511965978; // α = 6°
+	var OZADJE_DOLZINA_OBARVANEGA_DELA = 8.726646259971647; // α = 5°
+	var OZADJE_RAZMIK = 10.471975511965978; // α = 6°
 
 	/**
 	 * Default nastavitve za slider
@@ -355,15 +373,18 @@
 			krogBarva: "white",
 			krogBarvaObroba: "#bbb",
 			krogWidth: 1,
-			ozadjeKot: kotKroznegaLoka(this.data.polmer, ozadjeDolzinaObarvanegaDela),
-			ozadjeRazmik: kotKroznegaLoka(this.data.polmer, ozadjeRazmik),
+			ozadjeKot: kotKroznegaLoka(this.data.polmer, OZADJE_DOLZINA_OBARVANEGA_DELA),
+			ozadjeRazmik: kotKroznegaLoka(this.data.polmer, OZADJE_RAZMIK),
 			ozadjeBarva: "rgba(128,128,128, 0.3)"
 		};
 	};
 
+	/**
+	 * Prislo je do window resize, ponovno moramo zracunati zadeve
+	 */
 	Slider.prototype.preracunajPodatkeZaOzadje = function() {
-		this.data.ozadjeKot = kotKroznegaLoka(this.data.polmer, ozadjeDolzinaObarvanegaDela);
-		this.data.ozadjeRazmik = kotKroznegaLoka(this.data.polmer, ozadjeRazmik);
+		this.data.ozadjeKot = kotKroznegaLoka(this.data.polmer, OZADJE_DOLZINA_OBARVANEGA_DELA);
+		this.data.ozadjeRazmik = kotKroznegaLoka(this.data.polmer, OZADJE_RAZMIK);
 
 		this.nastaviPodatkeZaKrogNaSliderju();
 	}
@@ -391,45 +412,13 @@
 		this.nastaviPodatkeZaKrogNaSliderju();
 	}
 
+	/**
+	 * Nastavimo vrednost za izris krog na sliderju
+	 */
 	Slider.prototype.nastaviPodatkeZaKrogNaSliderju = function(){
 		this.data.krogPolmer = this.data.sirina/2 + 3;
 		this.data.krogOdmik = -this.data.polmer + this.data.krogPolmer -3;
 		this.data.krogRob = this.data.krogPolmer + this.data.krogWidth;
-	}
-
-	Slider.prototype.dobiPozicijoMiskeVCanvasu = function(e) {
-
-			if (e[Z.mouseXYatt.x]) {
-		  		var parent = e.srcElement.getBoundingClientRect();
-		  		// var y = e.clientY - parent.top - this.data.y;
-		  		// var x = e.clientX - parent.left - this.data.x;
-		  		var y = e.clientY - parent.top;
-		  		var x = e.clientX - parent.left;
-		    } else {
-		    	var touchobj = e.changedTouches[0];
-		    	var parent = e.changedTouches[0].target.getBoundingClientRect();
-
-		    	// var y = touchobj.clientY - parent.top - this.data.x;
-		    	// var x = touchobj.clientX - parent.left - this.data.y;
-		    	var y = touchobj.clientY - parent.top;
-		    	var x = touchobj.clientX - parent.left;
-
-		    }
-
-		    // DEBUG
-	    	this.miskaX = x;
-	    	this.miskaY = y;
-
-		    return {x: x, y: y};
-	}
-
-	Slider.prototype.dobiPozicijoMiskeOddmaknjenoOdSredine = function (e) {
-
-		var poz = this.dobiPozicijoMiskeVCanvasu(e);
-		poz.x-=this.data.x;
-		poz.y-=this.data.y;
-
-		return poz;
 	}
 
 	/**
@@ -446,16 +435,11 @@
 			toleranca = 0;
 		}
 
-		if (e.elementX) {
-			var x = e.elementX - e.elementSirina;
-			var y = e.elementY - e.elementVisina;
-		} else {
+		var x = e.elementX - e.elementSirina;
+		var y = e.elementY - e.elementVisina;
 
-			var poz = this.dobiPozicijoMiskeOddmaknjenoOdSredine(e);
-			var x = poz.x;
-			var y = poz.y;
-		}
 		var dist = Math.sqrt(x*x + y*y);
+
 		// preverimo ali je klik znotraj izrisanega kroga
 		if (((this.data.polmer - this.data.sirina - toleranca) < dist) && (dist < this.data.polmer + toleranca)) {
 			return true;
@@ -595,11 +579,9 @@
 
 		this.prejsnaSmer = null;
 
-		// da animate ne izrisuje po nepotrebnem imamo tu dva checka
-		this.zadnjaSprememba = null;
+		// da animate ne izrisuje ampak samo takrat ko se je kaj spremenilo
 		this.needsUpdate = false;
 
-		this.tapped = false;
 		// ali je user med sprehajanjem sel skozi rob
 		this.skozRob = false;
 	};
@@ -611,6 +593,7 @@
 	 * Nastavimo default vrednosti za moveableSlider
 	 */
 	MoveableSlider.prototype.nastaviDefaultVrednosti = function() {
+
 		Slider.prototype.nastaviDefaultVrednosti.call(this);
 
 		// ko smo nastavili defaulte nastavimo še area za brisanje MoveableSLider,
@@ -623,18 +606,18 @@
 		// this.vSredina.nastaviKoordinate({x: this.data.x, y: this.data.y});
 		this.updateInProgress = false;
 
-		this.tapped = false;
 		this.skoziRob = false;
 	}
+
 	/**
 	 * Izrisovali bomo nek nov slider
 	 * @param  {[type]} data [description]
 	 * @return {[type]}      [description]
 	 */
 	MoveableSlider.prototype.nastaviData = function(data) {
-		var app = this.data.appRanged;
+
 		this.data = data;
-		this.appRanged = app;
+		this.appRanged = this.data.appRanged;
 		this.needsUpdate = true;
 		this.nastaviDefaultVrednosti();
 	}
@@ -645,6 +628,7 @@
 	 * Ko ga prvič izrišemo najprej počistimo canvas, nato izrišemo statičen background in nato slider
 	 */
 	MoveableSlider.prototype.draw = function() {
+
 		this.ctxOzadje.pocistiCanvas();
 		this.ctx.pocistiCanvas();
 
@@ -653,10 +637,19 @@
 		this.izrisiKrogNaSliderju(this.ctx);
 	}
 
+	/**
+	 * Izrisemo ok ko je minilo 3 sekunde od zadnjege interakcije z canvasom
+	 * @return {[type]} [description]
+	 */
 	MoveableSlider.prototype.izrisiOK = function(){
 		Z.fireEvent(Z.body(), new Z.event("sliderCanEndEdit", {value: this.data.value}));
 	}
 
+	/**
+	 * Preverimo ali je uporabnik kliknil na OK?
+	 *
+	 * @param  {[type]} e [description]
+	 */
 	MoveableSlider.prototype.preveriZaKlikNaOk = function(e) {
 
 		if (e.elementX >= this.data.x - 20 &&
@@ -665,20 +658,23 @@
 			e.elementY <= this.data.y + 20)
 		{
 			sliderCentral.enableScroll();
+
 			window.cancelAnimationFrame(sliderCentral.requestAnimationFrameId);
-			touchHandler.remove(this.handlerId);
+
 			sliderCentral.editMode = false;
 
 			Z.zamenjajClass(sliderCentral.ctxSlider.canvas, "show", "hidden");
 			Z.zamenjajClass(sliderCentral.ctxBackground.canvas, "show", "hidden");
 			Z.zamenjajClass(sliderCentral.ctxSliderji.canvas, "hidden", "show");
 
+			// TODO: reduce?
 			Z.fireEvent(Z.body(), new Z.event("sliderEditingEnd"));
 			Z.fireEvent(Z.body(), new Z.event("expenseEdited", this.data.id));
 			Z.fireEvent(Z.body(), new Z.event("expense-"+this.data.id+"-edited", this.data));
 
 		}
 	}
+
 	/**
 	 * data smo movement, preverimo če rabimo ponovno izristovati
 	 *
@@ -725,7 +721,7 @@
 				}
 
 				this.updateInProgress = false;
-				
+
 			}
 		} else if (e.what === "clickEnd") {
 			this.skoziRob = false;
@@ -751,10 +747,10 @@
 
 		if (this.skoziRob !== false){
 			if (e.smer === -1) {
-				
+
 				return 0;
 			} else {
-				
+
 				return this.data.range;
 			}
 		}
@@ -788,56 +784,16 @@
 		return 0;
 	}
 
+	/**
+	 * Nastavimo vrednost
+	 *
+	 * @param  {[type]} tempValue [description]
+	 */
 	MoveableSlider.prototype.nastaviVrednost = function(tempValue) {
 
 		this.data.value = tempValue;
 
 		Z.fireEvent(Z.body(), new Z.event("sliderLiveUpdate", {value: this.data.value}));
-	}
-
-	/**
-	 * Preracunamo kot med sredino in tockama
-	 *
-	 * @param  x X koordinata
-	 * @param  y Y kooridnata
-	 *
-	 * @return kot
-	 */
-	MoveableSlider.prototype.izracunajKot = function(e) {
-
-	    var poz = this.dobiPozicijoMiskeOddmaknjenoOdSredine(e);
-
-		var rad = Math.atan2(poz.x, poz.y);
-
-		// prištejemo 90 da je origin med 3 in 4 - glej spodaj
-		var kot = rad * 180 / Math.PI + 90;
-
-		/**
-		*     |
-		*   3 | 4
-		* ----------
-		*   2 | 1
-		*     |
-		*
-		*  Ker obmocju 3 vraca negativne vrednosti
-		*/
-		if (kot < 0) {
-			var kot = 270 + Math.abs(kot);
-			return kot;
-		}
-		var kot = Math.abs(270 - kot);
-
-		return kot;
-	}
-
-	/**
-	 * Lahko se zgodi da imamo step 10 in se nato value nastavi na 9.99999 oz smo na max - step
-	 * V takšnih primerih moramo biti dostopni za risanje, kljub temu da je updateCount < redrawOn
-	 *
-	 * @return boolean
-	 */
-	MoveableSlider.prototype.valueNaRobu = function(){
-		return this.data.value < this.data.step || this.data.value > (this.data.range - this.data.step);
 	}
 
 	/**
@@ -852,37 +808,6 @@
 		this.izrisiSlider(this.ctx, this.data.zacetek, this.data.kot, this.data.barva);
 		this.izrisiKrogNaSliderju(this.ctx);
 	}
-
-	/**
-	 * Preverimo če bi z premikom premaknili vrednost/kot čez meje
-	 *
-	 * @param  tempValue Trenutna vrednost
-	 *
-	 * @return tempValue
-	 */
-	MoveableSlider.prototype.nastaviValueZnotrajRange = function(tempValue){
-
-		if ((tempValue >= 0) && (tempValue <= this.data.range)) {
-			return tempValue;
-		} else if (tempValue <= 0) {
-			return 0;
-		}
-
-		return this.data.range;
-	}
-
-	/**
-	 * Preracunamo novo vrednost
-	 *
-	 * @param  smer Smer premika
-	 *
-	 * @return Nova vrednost
-	 */
-	MoveableSlider.prototype.preracunaj = function(smer) {
-		// smer: 1 = desno | -1 = levo
-		return smer * this.data.step + this.data.value;
-	}
-
 
 	/**
 	 * ################################################################################################
