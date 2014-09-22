@@ -577,13 +577,8 @@
 		this.updateCount = 0;
 		this.redrawOn = 3;
 
-		this.prejsnaSmer = null;
-
 		// da animate ne izrisuje ampak samo takrat ko se je kaj spremenilo
 		this.needsUpdate = false;
-
-		// ali je user med sprehajanjem sel skozi rob
-		this.skozRob = false;
 	};
 
 	MoveableSlider.prototype = Object.create(Slider.prototype);
@@ -602,11 +597,7 @@
 		this.data.cleanY = this.data.y - this.data.krogOdmik * - 1 - this.data.sirina/2 - 6;
 		this.data.cleanH = this.data.cleanW = this.data.polmer * 2 + 12;
 
-		// uporabljamo za določanje klika na krožnici
-		// this.vSredina.nastaviKoordinate({x: this.data.x, y: this.data.y});
 		this.updateInProgress = false;
-
-		this.skoziRob = false;
 	}
 
 	/**
@@ -676,12 +667,12 @@
 	}
 
 	/**
-	 * data smo movement, preverimo če rabimo ponovno izristovati
+	 * User je kliknil na canvas, preverimo če rabimo ponovno izristovati/nastavljati nove vrednosti
 	 *
-	 * @param  smer Kam se premika prst/miška
+	 * @param  e TouchEvent
 	 */
 	MoveableSlider.prototype.update = function(e) {
-		if ((e.what === "click" || e.what === "move") ) {
+		if ((e.what === "click" || e.what === "move" || e.what === "doubleTap") ) {
 
 			if (e.what === "move") {
 				clearTimeout(this.editTimeoutCounter);
@@ -691,28 +682,20 @@
 
 				this.updateInProgress = true;
 
+				// ker lahko user vrti zunaj kroga/kroznice
 				if (this.preveriAliJePozicijaMiskeNaKrogu(e, e.tapZamik) || e.what === "move") {
 
 					clearTimeout(this.editTimeoutCounter);
-					var razlika = this.preracunajRazlikoGledeNaKot(e.kot, e.smer);
 
+					var razlika = this.preracunajRazlikoGledeNaKot(e);
 
-					if (razlika !== 0) {
+					if (razlika !== false) {
 
-						var robnaVrednost;
-						var vrednost;
-						if ((robnaVrednost = this.preveriRobneVrednosti(e, razlika, e.smer)) !== false) {
-
-							vrednost = robnaVrednost;
-						} else {
-
-							vrednost = this.data.value + razlika;
-						}
+						vrednost = this.data.value + razlika;
 
 						this.nastaviVrednost(vrednost);
 						this.preracunajKot();
 
-						this.prejsnaSmer = e.smer;
 						this.needsUpdate = true;
 					}
 
@@ -724,64 +707,52 @@
 
 			}
 		} else if (e.what === "clickEnd") {
-			this.skoziRob = false;
+
 			clearTimeout(this.editTimeoutCounter);
 			this.editTimeoutCounter = setTimeout(this.izrisiOK.bind(this), this.data.editModeTimeout || 2500);
+
 		}
+
 		return;
-	}
-
-	/**
-	 * Preverimo ali smo sli pri premikanju skoz rob; čez this.data.range oz pod 0
-	 *
-	 * @param  e MouseEvent
-	 *
-	 * @return true Če smo šli čez rob
-	 */
-	MoveableSlider.prototype.preveriRobneVrednosti = function(e, vrednost, smer) {
-
-		// zaznali smo da smo šli v tem gibu skozi rob
-		if (e.skoziRob) {
-			this.skoziRob = e.skoziRob;
-		}
-
-		if (this.skoziRob !== false){
-			if (e.smer === -1) {
-
-				return 0;
-			} else {
-
-				return this.data.range;
-			}
-		}
-		return false;
 	}
 
 	/**
 	 * Nastavimo za koliko bi se vrednost spremenila glede na kot
 	 *
-	 * @param  kot
+	 * @param  e
+	 * @return razlika v value|false če ni razlike
 	 */
-	MoveableSlider.prototype.preracunajRazlikoGledeNaKot = function(kot) {
+	MoveableSlider.prototype.preracunajRazlikoGledeNaKot = function(e) {
 
 		// dobimo koliko bi bila temp value
-		var tempValue = (kot / 360) * this.data.range;
+		var tempValue = (e.kot / 360) * this.data.range;
 
 		var tempValue = tempValue - this.data.value;
 
-		if (Math.abs(tempValue) >= this.data.step) {
+		if (Math.abs(tempValue) >= this.data.step/2) {
 
 			var kolikokrat = Math.floor(Math.abs(tempValue) / this.data.step);
 
+			// odštevamo
 			if (tempValue < 0) {
-				var razlika = -this.data.step * kolikokrat;
-				return razlika;
+				// value bomo postavili na 0
+				if (this.data.value === this.data.step) {
+					return -this.data.step;
+				}
+				// preračunamo koliko moramo odšteti
+				return -this.data.step * kolikokrat;
 			}
-			var razlika = this.data.step * kolikokrat;
-			return razlika;
+			else if (this.data.value === this.data.range - this.data.step) {
+				// value bomo postavili na range
+				return this.data.step;
+			} else {
+				// preračunamo koliko moramo prišteti
+				return this.data.step * kolikokrat;
+			}
 		}
 
-		return 0;
+		// ni spremembe
+		return false;
 	}
 
 	/**
