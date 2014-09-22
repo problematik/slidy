@@ -40,7 +40,6 @@ naslednji "slidy-i-hrana2" itd...
 *Za testiranje se uporablja lasten mini testing framework*
 
 ####Known bugs/todos
-- da se ustavi na 0 oz. na max vrednosti, da ne skoči iz 0 naprimer na 180
 - dodajanje animacij
 - JSLint kode
 - večji test coverage
