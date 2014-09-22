@@ -74,7 +74,9 @@
 	font-size: 0.8em;
 	color: gray;
 }
-
+.error {
+	color: red;
+}
 .edit-mode {
 	z-index: 1000;
 	text-align: center;
