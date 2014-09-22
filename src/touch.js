@@ -1,6 +1,5 @@
 (function () {
 
-    // http://gianlucaguarini.github.io/Tocca.js/demo-fun.html
     var TouchHandler = function (data) {
         this.element = Z.element("testing");
 
@@ -216,51 +215,25 @@
      * @return -1|1; -1 = levo 1 = desno
      */
      TouchHandler.prototype.dolociSmer = function (e) {
+        var rect = e.srcElement.getBoundingClientRect();
 
-             var rect = e.srcElement.getBoundingClientRect();
+        var sirina = rect.width/2;
+        var visina = rect.height/2;
 
-             var sirina = rect.width/2;
-             var visina = rect.height/2;
+        var x1 = e.elementX - sirina;
+        var y1 = e.elementY - visina;
+        var x2 = this.elementPrejX - sirina;
+        var y2 = this.elementPrejY - visina;
 
+        var kotZdaj = this.dolociKot(x1, y1);
+        var kotPrej = this.dolociKot(x2, y2);
 
+        e.elementSirina = sirina;
+        e.elementVisina = visina;
+        e.kot = kotZdaj;
+        e.kotPrej = kotPrej;
 
-         var x1 = e.elementX - sirina;
-         var y1 = e.elementY - visina;
-         var x2 = this.elementPrejX - sirina;
-         var y2 = this.elementPrejY - visina;
-
-         var kotZdaj = this.dolociKot(x1, y1);
-         var kotPrej = this.dolociKot(x2, y2);
-
-
-
-
-         if (kotZdaj < kotPrej) {
-             e.smer = -1;
-             e.smerOznaka = "levo";
-         } else {
-             e.smer = 1;
-             e.smerOznaka = "desno";
-         }
-
-         if (kotZdaj >= 359 && kotZdaj <= 360 && kotPrej >= 0 && kotPrej <= 1) {
-         console.group("NASTVLJAM");
-            console.log("ROBNA NASTAVLJENA NA -1 SMER", e.smer);
-            e.skoziRob = -1;
-            e.smer = -1;
-         console.groupEnd();
-         } else if (kotZdaj>= 0 && kotZdaj <= 1 && kotPrej >= 359 && kotPrej <= 360){
-            console.group("NASTVLJAM");
-            console.log("ROBNA NASTAVLJENA NA 1 SMER", e.smer);
-            e.skoziRob = 1;
-            e.smor = 1;
-         console.groupEnd();
-         }
-         e.elementSirina = sirina;
-         e.elementVisina = visina;
-         e.kot = kotZdaj;
-         e.kotPrej = kotPrej;
-         return e;
+        return e;
      }
 
     TouchHandler.prototype.dolociKot = function (e, ey) {
@@ -283,12 +256,11 @@
         }
 
         var rad = Math.atan2(x, y);
-        // var rad = Math.atan2(x,y);
 
         // prištejemo 90 da je origin med 3 in 4 - glej spodaj
         var kot = rad * 180 / Math.PI + 90;
 
-        /**
+        /*
         *     |
         *   3 | 4
         * ----------
@@ -297,17 +269,20 @@
         *
         *  Ker obmocju 3 vraca negativne vrednosti
         */
+
         if (kot < 0) {
             var kot = 270 + Math.abs(kot);
-            return kot;
+        } else {
+            var kot = Math.abs(270 - kot);
         }
-        var kot = Math.abs(270 - kot);
+
         return kot;
     }
 
     TouchHandler.prototype.touchEnd = function (e) {
 
         e.what = "clickEnd";
+        e = this.dobiPozicijoMiskeVElement(e);
 
         this.clicked = false;
         this.elementVisina = null;
