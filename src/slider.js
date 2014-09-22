@@ -532,7 +532,7 @@
 	 */
 	Slider.prototype.izrisiOzadje = function(ctx) {
 
-		for (var i = 0; i < 360; i+=this.data.ozadjeRazmik) {
+		for (var i = 0; i < 359; i+=this.data.ozadjeRazmik) {
 			this.izrisiIzsek(ctx, i, this.data.ozadjeKot, this.data.ozadjeBarva);
 		}
 	}
