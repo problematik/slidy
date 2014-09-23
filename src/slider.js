@@ -94,6 +94,10 @@
 				element.height = this.data.height;
 			}
 
+			if (this.premikajoci) {
+				this.premikajoci.countdown.izracunajPodatke();
+			}
+
 			// ce smo v edit mode updatejtamo samo premikajoci slider
 			if (this.editMode) {
 				this.premikajoci.draw();
