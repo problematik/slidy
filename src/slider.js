@@ -305,7 +305,9 @@
 	 * @param  {[type]} e    [description]
 	 */
 	SliderCentral.prototype.handleTouchOnCanvas = function(e) {
-		this.premikajoci.update(e);
+		if (this.editMode === true) {
+			this.premikajoci.update(e);
+		}
 	}
 
 	/**
