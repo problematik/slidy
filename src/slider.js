@@ -13,11 +13,9 @@
 		// vsi dodani sliderji
 		this.sliderji = [];
 
-		// kamor izrisujemo vse sliderje ko nismo v edit mode
+		// kamor izrisujemo vse sliderje
 		this.ctxSliderji = this.data.canvasSliderji.getContext("2d");
 
-		// izrisujemo premikajoci se slider
-		this.ctxSlider = this.data.canvasSlider.getContext("2d");
 		// ker je ozadje staticno ga izrisemo v svoj canvas
 		this.ctxBackground = this.data.canvasBackground.getContext("2d");
 
@@ -33,9 +31,11 @@
 			this.clearRect(0, 0, this.canvas.width, this.canvas.height);
 		}
 
+		// ko smo v edit mode
 		this.requestAnimationFrameId = 0;
+		// ko izrisujemo zacetne vrednosti sliderjev
+		this.redrawnAnimationId = 0;
 
-		this.ctxSlider.pocistiCanvas = pocistiCanvas;
 		this.ctxSliderji.pocistiCanvas = pocistiCanvas;
 		this.ctxBackground.pocistiCanvas = pocistiCanvas;
 
@@ -82,7 +82,7 @@
 			this.data.x = this.data.width/2;
 			this.data.y = this.data.height/2;
 
-			var canvasi = [this.data.canvasSliderji, this.data.canvasBackground, this.data.canvasSlider];
+			var canvasi = [this.data.canvasSliderji, this.data.canvasBackground];
 
 			// nastavimo nove dimenzije canvasom
 			for (var i = 0; i < canvasi.length; i++) {
@@ -130,10 +130,6 @@
 
 			var data = {width: this.data.width, height: this.data.height, className: "unselect"};
 
-			if (hidden) {
-				data.className += " hidden";
-			}
-
 			return Z.create("canvas", id, data, this.data.canvasElement);
 		};
 
@@ -145,9 +141,8 @@
 			canvasElement: function(){return Z.create("div", application.preFix + "-canvas-wrapper", {className: "canvas-wrapper"}, application.rootElement)},
 			width: function(){return that.data.canvasElement.getBoundingClientRect().width;},
 			height: function(){return that.data.canvasElement.getBoundingClientRect().height;},
-			canvasSliderji: function(){return createCanvas.call(that, "c-sliderji");},
-			canvasBackground: function(){return createCanvas.call(that, "c-background", true);},
-			canvasSlider: function(){return createCanvas.call(that, "c-slider", true);}
+			canvasBackground: function(){return createCanvas.call(that, "c-background");},
+			canvasSliderji: function(){return createCanvas.call(that, "c-sliderji");}
 		};
 
 		if (this.data === undefined) {
@@ -179,7 +174,7 @@
 		e.data.y = this.ctxSliderji.canvas.height/2;
 		e.data.appRanged = this.data.appRanged;
 
-		var slider = new Slider(this.ctxSliderji, e.data);
+		var slider = new Slider(this.ctxSliderji, this.ctxBackground, e.data);
 
 		slider.draw();
 
@@ -202,6 +197,7 @@
 		}
 
 		this.ctxSliderji.pocistiCanvas();
+		this.ctxBackground.pocistiCanvas();
 
 		for (var i = 0; i < this.sliderji.length; i++) {
 			this.sliderji[i].draw();
@@ -246,6 +242,7 @@
 					if (this.data.izrisovanje === 1){
 
 						this.ctxSliderji.pocistiCanvas();
+						this.ctxBackground.pocistiCanvas();
 						this.goToEditMode(slider);
 
 					} else {
@@ -264,7 +261,6 @@
 	SliderCentral.prototype.disableScroll = function() {
 		Z.zamenjajClass(this.ctxSliderji.canvas, "scroll", "noscroll");
 		Z.zamenjajClass(this.ctxBackground.canvas, "scroll", "noscroll");
-		Z.zamenjajClass(this.ctxSlider.canvas, "scroll", "noscroll");
 	}
 
 	/**
@@ -273,7 +269,6 @@
 	SliderCentral.prototype.enableScroll = function() {
 		Z.zamenjajClass(this.ctxSliderji.canvas, "noscroll", "scroll");
 		Z.zamenjajClass(this.ctxBackground.canvas, "noscroll", "scroll");
-		Z.zamenjajClass(this.ctxSlider.canvas, "noscroll", "scroll");
 	}
 
 	/**
@@ -285,27 +280,18 @@
 
 		this.disableScroll();
 
-		Z.zamenjajClass(this.ctxSliderji.canvas, "show", "hidden");
-		Z.zamenjajClass(this.ctxBackground.canvas, "hidden", "show");
-		Z.zamenjajClass(this.ctxSlider.canvas, "hidden", "show");
-
 		if (this.premikajoci === null) {
 			slider.data.editModeTimeout = this.data.editModeTimeout;
-			this.premikajoci = new MoveableSlider(this.ctxSlider, this.ctxBackground, slider.data);
-			this.premikajoci.handlerId = window.touchHandler.add(this.ctxSlider.canvas, this.handleTouchOnCanvas.bind(this));
+			this.premikajoci = new MoveableSlider(this.ctxSliderji, this.ctxBackground, slider.data);
+			this.premikajoci.handlerId = window.touchHandler.add(this.ctxSliderji.canvas, this.handleTouchOnCanvas.bind(this));
 		}
 
 		this.premikajoci.nastaviData(slider.data);
 
 		requestAnimationFrame(this.premikajoci.izrisiOzadje.bind(this.premikajoci, this.ctxBackground));
 
-
 		Z.fireEvent(Z.body(), new Z.event("sliderEditingStart", {value: slider.data.value}));
 
-		this.premikajoci.draw();
-
-		this.ctxSliderji.pocistiCanvas();
-		this.ctxBackground.pocistiCanvas();
 
 		this.animate();
 	}
@@ -320,7 +306,7 @@
 	}
 
 	/**
-	 * Ponovno izrisemo
+	 * Ponovno izrisemo ko smo v edit mode
 	 *
 	 * @param  {[type]} id [description]
 	 */
@@ -348,15 +334,19 @@
 	/**
 	 * Izrisemo posamezni slider
 	 */
-	this.Slider = function(ctx, data) {
+	this.Slider = function(ctx, ctxBack, data) {
 
-		if (ctx === undefined || data === undefined) {
+		if (ctx === undefined || data === undefined || ctxBack === undefined) {
 			throw new Error("Nisi podal podatkov za kreiranje Sliderja");
 		}
 
 		this.ctx = ctx;
+		this.ctxBackground = ctxBack;
 		this.data = data;
 		this.nastaviDefaultVrednosti();
+
+		// podatki o animaciji
+		this.animacija = {};
 	};
 
 	// optimalna dolzina in razmik glede na try&error za r=100
@@ -571,7 +561,7 @@
 	  */
 	this.MoveableSlider = function(ctx, ctxOzadje, data) {
 
-		Slider.call(this, ctx, data);
+		Slider.call(this, ctx, ctxOzadje, data);
 
 		this.ctxOzadje = ctxOzadje;
 
@@ -650,10 +640,6 @@
 		window.cancelAnimationFrame(sliderCentral.requestAnimationFrameId);
 
 		sliderCentral.editMode = false;
-
-		Z.zamenjajClass(sliderCentral.ctxSlider.canvas, "show", "hidden");
-		Z.zamenjajClass(sliderCentral.ctxBackground.canvas, "show", "hidden");
-		Z.zamenjajClass(sliderCentral.ctxSliderji.canvas, "hidden", "show");
 
 		// TODO: reduce?
 		Z.fireEvent(Z.body(), new Z.event("sliderEditingEnd"));
