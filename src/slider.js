@@ -209,12 +209,15 @@
 	 */
 	SliderCentral.prototype.updateSlider = function() {
 
-		this.ctxSliderji.pocistiCanvas();
-
 		for(var i = 0; i < this.sliderji.length; i++) {
-			this.sliderji[i].preracunajPodatkeZaOzadje();
-			this.sliderji[i].draw();
+			if (this.sliderji[i].data.lastEdited) {
+				this.lastEdited = this.sliderji[i];
+			} else {
+				this.sliderji[i].preracunajPodatkeZaOzadje();
+			}
 		}
+
+		this.sliderRedrawn();
 	}
 
 	/**
@@ -321,6 +324,48 @@
 		}
 	}
 
+	SliderCentral.prototype.sliderRedrawn = function() {
+		var cas = this.data.animationTime || 1750;
+		this.sliderRedrawnKoraki = Math.floor(cas/60);
+
+		this.sliderRedrawnF = 0;
+
+		this.ctxSliderji.pocistiCanvas();
+		this.ctxBackground.pocistiCanvas();
+
+		for (var i = 0; i < this.sliderji.length; i++) {
+			if (this.sliderji[i].data.lastEdited !== true) {
+				this.sliderji[i].prepareForAnimation(this.sliderRedrawnKoraki);
+				this.sliderji[i].draw();
+			} else {
+				this.sliderji[i].izrisiOzadje(this.sliderji[i].ctxBackground);
+			}
+		}
+
+		this.sliderRedrawnFrame();
+	}
+
+	SliderCentral.prototype.sliderRedrawnFrame = function () {
+
+		if (this.sliderRedrawnF < this.sliderRedrawnKoraki+1) {
+			this.redrawnAnimationId = window.requestAnimationFrame(this.sliderRedrawnFrame.bind(this));
+
+			this.ctxSliderji.pocistiCanvas();
+			for (var i = 0; i < this.sliderji.length; i++) {
+				if (this.sliderji[i].data.lastEdited !== true) {
+					this.sliderji[i].animate();
+				} else {
+					this.sliderji[i].draw(true);
+				}
+			}
+
+			this.sliderRedrawnF++;
+		} else {
+			delete(this.lastEdited.data.lastEdited);
+			this.lastEdited = null;
+			Z.fireEvent(Z.body(), new Z.event("applicationReSaveData"));
+		}
+	}
 
 
 	/**
@@ -385,7 +430,7 @@
 	 */
 	Slider.prototype.nastaviDefaultVrednosti = function() {
 
-		this.preracunajKot();
+		this.nastaviNovKotGledeNaVrednost();
 
 		var passed = Z.preveritiVrednosti([undefined, null, "NaN"], this.data.x, this.data.y, this.data.polmer, this.data.kot);
 		if (passed !== true){
@@ -444,9 +489,9 @@
 	 *
 	 * @return {[type]} [description]
 	 */
-	Slider.prototype.izracunajTockeZaKrogNaSliderju = function() {
+	Slider.prototype.izracunajTockeZaKrogNaSliderju = function(kot) {
 		// 360 - this.data.zacetek == da začnemo iz iste točke kot Slider
-		var radian = toRadian(this.data.kot + 360 - this.data.zacetek);
+		var radian = toRadian(kot + 360 - this.data.zacetek);
 
 		this.krogX = this.data.x + this.data.krogOdmik  * Math.cos(radian);
 		this.krogY = this.data.y + this.data.krogOdmik * Math.sin(radian);
@@ -457,9 +502,9 @@
 	 *
 	 * @param  ctx
 	 */
-	Slider.prototype.izrisiKrogNaSliderju = function(ctx) {
+	Slider.prototype.izrisiKrogNaSliderju = function(ctx, kot) {
 
-		var data = this.izracunajTockeZaKrogNaSliderju();
+		var data = this.izracunajTockeZaKrogNaSliderju(kot);
 
 		ctx.save();
 		ctx.beginPath();
@@ -530,20 +575,44 @@
 	/**
 	 * Izrisemo vse potrebno za prikaz sliderja
 	 */
-	Slider.prototype.draw = function() {
+	Slider.prototype.draw = function(skip) {
 
-		this.izrisiOzadje(this.ctx);
+		if (skip === undefined) {
+			this.izrisiOzadje(this.ctxBackground);
+		}
+
 		this.izrisiSlider(this.ctx);
-		this.izrisiKrogNaSliderju(this.ctx);
+		this.izrisiKrogNaSliderju(this.ctx, this.data.kot);
 	}
 
 	/**
-	 * Dobimo vrednost kot-a za izrisovanje
+	 * Nastavimo nov kot glede na value in range
 	 */
-	Slider.prototype.preracunajKot = function() {
-		var noviKot = (this.data.value / this.data.range) * 360;
-		this.data.kot = noviKot;
+	Slider.prototype.nastaviNovKotGledeNaVrednost = function() {
+		this.data.kot = this.preracunajKot(this.data.value, this.data.range);
 	}
+
+	/**
+	 * Preracunamo kot glede na value range
+	 */
+	Slider.prototype.preracunajKot = function(value, range) {
+		return (value / range) * 360;
+	}
+
+	Slider.prototype.prepareForAnimation = function(koraki) {
+		this.animacija.step = this.data.value / koraki;
+		this.animacija.value = 0;
+		this.animacija.kot = 0;
+	}
+
+	Slider.prototype.animate = function(kof) {
+		this.animacija.value += this.animacija.step;
+
+		this.izrisiIzsek(this.ctx, this.data.zacetek, this.animacija.kot, this.data.barva);
+		this.izrisiKrogNaSliderju(this.ctx, this.animacija.kot);
+		this.animacija.kot = this.preracunajKot(this.animacija.value, this.data.range);
+	}
+
 	/**
 	 * ################################################################################################
 	 * #																							  #
@@ -618,7 +687,7 @@
 
 		this.izrisiOzadje(this.ctxOzadje);
 		this.izrisiSlider(this.ctx, this.data.zacetek, this.data.kot, this.data.barva);
-		this.izrisiKrogNaSliderju(this.ctx);
+		this.izrisiKrogNaSliderju(this.ctx, this.data.kot);
 	}
 
 	MoveableSlider.prototype.onCountdownStart = function() {
@@ -640,6 +709,8 @@
 		window.cancelAnimationFrame(sliderCentral.requestAnimationFrameId);
 
 		sliderCentral.editMode = false;
+
+		this.data.lastEdited = true;
 
 		// TODO: reduce?
 		Z.fireEvent(Z.body(), new Z.event("sliderEditingEnd"));
@@ -676,13 +747,11 @@
 						vrednost = this.data.value + razlika;
 
 						this.nastaviVrednost(vrednost);
-						this.preracunajKot();
+						this.nastaviNovKotGledeNaVrednost();
 
 						this.needsUpdate = true;
 					}
 
-				} else {
-					this.preveriZaKlikNaOk(e);
 				}
 
 				this.updateInProgress = false;
@@ -758,7 +827,7 @@
 
 		// ponovno izrišemo
 		this.izrisiSlider(this.ctx, this.data.zacetek, this.data.kot, this.data.barva);
-		this.izrisiKrogNaSliderju(this.ctx);
+		this.izrisiKrogNaSliderju(this.ctx, this.data.kot);
 	}
 
 
