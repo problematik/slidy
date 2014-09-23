@@ -13,9 +13,12 @@
 		this.inputs = null;
 
 		Z.addEvent(Z.body(), "applicationDataLoadedFromStorage", this.dataLoadedFromStorage.bind(this));
+		Z.addEvent(Z.body(), "applicationReSaveData", this.shraniPodatkeVStorage.bind(this));
 	}
 
-
+	ExpenseManager.prototype.shraniPodatkeVStorage = function () {
+		Z.fireEvent(Z.body(), new Z.event("applicationSaveData", this.expenses));
+	}
 	ExpenseManager.prototype.sliderUpdated = function () {
 
 	}
