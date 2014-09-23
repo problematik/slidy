@@ -47,12 +47,9 @@
 
 	window.onload = function () {
 		var data = {
-			appMode : "diameter", // TESTING: uporabniki podajo polmer za vsak krog posebaj
-			appRanged: true, // TESTING: uporabnik ne more iti v minus na sliderju
-			izrisovanje: 1, // TESTING: 1 = isti canvas za vse sliderje | 2 = vsak slider na svojem canvasu
-			preFix : "slidy",
-			editModeTimeout: 3000,
-			projectName: "slidy"
+			preFix : "slidy", // prefix za id-je elementov
+			editModeTimeout: 3000, // po koliko časa po zadnji interakcij z canvasom naj pride do prekinitve urejanja
+			projectName: "slidy", // kam shranjujemo podatke v localStorage
 		};
 
 		window["application"] = new Application(data);

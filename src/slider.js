@@ -141,7 +141,6 @@
 
 		// kaj naj se ustvari če ni podano
 		var defaults = {
-			sliderCanvasPrefix: "slider",
 			canvasElement: function(){return Z.create("div", application.preFix + "-canvas-wrapper", {className: "canvas-wrapper"}, application.rootElement)},
 			width: function(){return that.data.canvasElement.getBoundingClientRect().width;},
 			height: function(){return that.data.canvasElement.getBoundingClientRect().height;},
@@ -176,9 +175,14 @@
 
 		e.data.x = this.ctxSliderji.canvas.width/2;
 		e.data.y = this.ctxSliderji.canvas.height/2;
-		e.data.appRanged = this.data.appRanged;
 
-		var slider = new Slider(this.ctxSliderji, this.ctxBackground, e.data);
+		var newData = Z.clone(this.data);
+
+		for (var att in e.data) {
+			newData[att] = e.data[att];
+		}
+
+		var slider = new Slider(this.ctxSliderji, this.ctxBackground, newData);
 
 		slider.draw();
 
@@ -245,16 +249,9 @@
 
 					this.editMode = true;
 
-					// izrisujemo vse na enem canvasu - default
-					if (this.data.izrisovanje === 1){
-
-						this.ctxSliderji.pocistiCanvas();
-						this.ctxBackground.pocistiCanvas();
-						this.goToEditMode(slider);
-
-					} else {
-						// ne še :D
-					}
+					this.ctxSliderji.pocistiCanvas();
+					this.ctxBackground.pocistiCanvas();
+					this.goToEditMode(slider);
 
 					break;
 				}
@@ -640,9 +637,6 @@
 
 		this.ctxOzadje = ctxOzadje;
 
-		this.updateCount = 0;
-		this.redrawOn = 3;
-
 		// da animate ne izrisuje ampak samo takrat ko se je kaj spremenilo
 		this.needsUpdate = false;
 
@@ -676,7 +670,6 @@
 	MoveableSlider.prototype.nastaviData = function(data) {
 
 		this.data = data;
-		this.appRanged = this.data.appRanged;
 		this.needsUpdate = true;
 		this.nastaviDefaultVrednosti();
 	}

@@ -19,9 +19,9 @@
         // id za timeout
         this.tapTimer = 0;
         // cas med dvema klikoma da se šteje kot klik
-        this.tapCas = 200;
+        this.tapCas = data.tapCas || 200;
         // treshold za tap
-        this.tapZamik = 30;
+        this.tapZamik = data.tapZamik || 30;
 
         this.prejX = this.prejY = this.zdajX = this.zdajY = null;
         this.elementPrejX = this.elementPrejY = null;
