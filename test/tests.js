@@ -230,7 +230,7 @@
 
 		resetMock("Slider", "nastaviDefaultVrednosti");
 
-		assertCalledAndReturn("Kličemo defaults", a, "defaults",{my : "data", was : "set", thisShouldntBe : "overwritten"} , function(){
+		assertCalledAndReturn("Kličemo defaults", Slider, "defaults" ,{my : "data", was : "set", thisShouldntBe : "overwritten"} , function(){
 			assertException("Vrzemo exception če ni zadostnih podatkov", function(){
 				a.nastaviDefaultVrednosti();
 			});
