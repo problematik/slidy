@@ -167,12 +167,33 @@
 			fn();
 		} catch(e) {
 
-			var msg = e.stack.split("\n");
+			if(e.stack) {
+				var msg = e.stack.split("\n");
 
-			for (var i = 0; i < msg.length; i++) {
-				var li = createLi("fail", msg[i]);
+				for (var i = 0; i < msg.length; i++) {
+					var li = createLi("fail", msg[i]);
 
-				ul.appendChild(li);
+					ul.appendChild(li);
+				}
+			} else {
+
+				var list = [];
+
+				list.push(createLi("fail", "Error: " + e.message));
+
+				if (e.sourceURL) {
+					var msg = "at " + e.sourceURL;
+					if (e.line) {
+						msg +=":" + e.line;
+					}
+					list.push(createLi("fail", msg));
+				} else {
+					list.push(createLi("fail", "No stack trace avaliable"))
+				}
+
+				while(list.length) {
+					ul.appendChild(list.shift());
+				}
 			}
 
 			preveriRezultatTesta(false);
