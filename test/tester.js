@@ -237,7 +237,7 @@
 	 */
 	var odkrijRootElement = function() {
 		if (rootUl.skrito) {
-			rootElement.getElementsByClassName("group cursorPointer")[0].click();
+			Z.click(rootElement.getElementsByClassName("group cursorPointer")[0]);
 		}
 	}
 

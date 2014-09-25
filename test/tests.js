@@ -37,13 +37,13 @@
 				clicked = true;
 			});
 			Z.podatki(el);
-			el.click();
+			Z.click(el);
 			assertThat(clicked, "Click event dodan in vrednost spremenjena");
 
 			clicked = false;
 
 			Z.odstranitiEvent(el, "click");
-			el.click();
+			Z.click(el);
 			assertThat(clicked === false, "Click event uspešno odstranjen");
 
 		})();
@@ -62,7 +62,7 @@
 
 			Z.dodatiEvent(el, "click", pristejPet);
 
-			el.click();
+			Z.click(el);
 
 			assertThat(counter == 6, "Uspešno dodal več različnih click handlerjev");
 
@@ -88,7 +88,7 @@
 
 			Z.odstranitiEvent(el, "click", pristejPet);
 
-			el.click();
+			Z.click(el);
 			el.dispatchEvent(keyboardEvent);
 			assertThat(keypressed === true && counter === 1, "Uspešno zbrisal točno določen handler");
 
@@ -97,7 +97,7 @@
 
 			Z.odstranitiEvent(el);
 
-			el.click();
+			Z.click(el);
 			el.dispatchEvent(keyboardEvent);
 
 			assertThat(keypressed === false && counter === 0, "Uspešno zbrisal vse handlerje");
