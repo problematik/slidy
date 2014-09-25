@@ -326,13 +326,16 @@
 
 		// če jo imamo v window gre za Prototype
 		// Če gre za prototype je potrebno shraniti original fn da jo bomo lahko potem nastavili nazaj
-		// Če gre za druge objekte, ne potrebujemo shranjevati ker so začasni
+		// Če gre za druge objekte, pa urejamo direktno tisti objekt in ga tudi shranimo za kasnejšo uporabo
 		if (window[kdo]) {
 			mocks[kdo][kaj] = window[kdo].prototype[kaj];
 
 			window[kdo].prototype[kaj] = mocked;
 		} else {
-			kdo[kaj] = mocked;
+			// shranimo konstruktor - da bomo pravilnemu objektu nazaj nastavjali original vrednost funkcije
+			// shranimo original funkcijo
+			mocks[kdo][kaj] = [kdo.prototype.constructor, kdo.prototype[kaj]];
+			kdo.prototype[kaj] = mocked
 		}
 
 		fn();
@@ -359,7 +362,7 @@
 	this.resetMocks = function(){
 		for (var ob in mocks) {
 			for (var fn in mocks[ob]) {
-				window[ob].prototype[fn] = mocks[ob][fn];
+				this.resetMock(ob, fn);
 			}
 		}
 	}
@@ -371,6 +374,11 @@
 	 * @param  fn Katero funkcijo
 	 */
 	this.resetMock = function(ob, fn){
-		window[ob].prototype[fn] = mocks[ob][fn];
+		if (window[ob]) {
+			window[ob].prototype[fn] = mocks[ob][fn];
+		} else {
+			var mock = mocks[ob][fn];
+			mock[0].prototype[fn] = mock[1];
+		}
 	}
 })();
