@@ -222,11 +222,11 @@
 		});
 
 		assertCalled("Kličemo nastaviDefaultVrednosti", "Slider", "nastaviDefaultVrednosti", function(){
-			new Slider(1,1);
+			new Slider(1,1,1);
 		});
 
 		var data = {thisdont : "overwrite"};
-		var a = new Slider(1,data);
+		var a = new Slider(1,1,data);
 
 		resetMock("Slider", "nastaviDefaultVrednosti");
 
