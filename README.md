@@ -9,9 +9,9 @@ Drsniku lahko nastaviš razpon, polmer, korak ter barvo.
 Vsak izdatek lahko prilagodiš tako, da klikneš na drsnik. Ko klikneš na drsnik se izdatek za drsnik postavi v ospredje (ostali se začasno skrijejo), tako da lahko začneš z nastavljanjem vrednosti.
 
 Z miškinim/prstnim potegom lahko nastavljaš vrednost, s klikom na krožnico drsnika pa vrednost premikaš za korak.
-Po določenem času po zadnji interakciji s canvasom (glej `Parametri - editModeTimeout`) se na sredini drsnika začnejo izrisovati manjši krogi. Ko so zapolnjeni se smatra kot da je uporabnik končal z interakcijo/urejanjem. Tako se izdatku shrani trenutna nastavljena vrednost.
+Po določenem času po zadnji interakciji s canvasom (glej [Parametri - editModeTimeout](#atributi)) se na sredini drsnika začnejo izrisovati manjši krogi. Ko so zapolnjeni se smatra kot da je uporabnik končal z interakcijo/urejanjem. Tako se izdatku shrani trenutna nastavljena vrednost.
 
-Vsi dodani izdatki in vrednosti se shranjujejo tako, da če zapreš okno/sejo so podatki varno shranjeni v localStorage - tako da če kdaj kaj pravilno ne izriše je potreben v localStorage pobrisati ključ `slidy` - glej `Parametri - projectName`
+Vsi dodani izdatki in vrednosti se shranjujejo tako, da če zapreš okno/sejo so podatki varno shranjeni v localStorage - tako da če kdaj kaj pravilno ne izriše je potreben v localStorage pobrisati ključ `slidy` - glej [Atributi - projectName](#atributi)
 
 Slidy za izrisovanje uporablja prilagodljiv razpored elementov (desktop: fixed 980px width, responsive width 960px do 480px, pod 480px imamo fixed width 480px)
 
