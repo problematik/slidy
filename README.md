@@ -37,7 +37,7 @@ naslednji "slidy-i-hrana2" itd...
 [demo]:http://problematik.github.io/slidy/src
 [tests]:http://problematik.github.io/slidy/test
 
-*Za testiranje se uporablja lasten mini testing framework*
+Za testiranje se uporablja lasten mini [testing framework](#testiranje)
 
 
 
@@ -82,3 +82,61 @@ Ko ustvarjamo aplikacijo Slidy, ji lahko podamo naslednje vrednosti:
 
 ######*`Ne deluje na IE starejšem od verzije 9 - ta ne podpira canvas elementa`*
 
+### Testiranje
+
+Za potrebe testiranja skript sem spisal malo testno orodje. Nahaja se v `test/tester.js`. Ponuja pa naslednje funkcije/zmogljivosti
+
+###### Funkcija, s katero preverimo ali je podani pogoj izpolnjen
+```javascript
+assertThat(value, desc)
+```
+* **value** - `Vrednost, ki mora biti true da je test pozitiven`
+* **desc** - `Tekst, ki opisuje pogoj testa`
+
+###### Funkcija, ki nam omogoče združevanje testov skupaj v smiselne skupine
+```javascript
+testGroup(desc, fn)
+```
+* **desc** - `Tekst, ki označuje skupino tekstov`
+* **fn** - `Funkcija s testi v isti skupini`
+
+###### Pričakujemo, da bo koda v podani funkcija vrgla exception. Če funkcija vrže exception/error je test pozitiven
+```javascript
+assertException(desc, fn)
+```
+* **desc** - `Tekst, ki opisuje pogoj testa`
+* **fn** - `Funkcija s testi, kjer pričakujem exception/error`
+
+###### Preverimo ali je koda podana v `fn` klicala metodo na podanem objektu. Ustvarjamo [mock] objekte
+[mock]:http://en.wikipedia.org/wiki/Mock_object
+######*`Objekti so mockani (ne izvajajo originalne kode) dokler jih ne resetiramo z resetMock!`*
+```javascript
+assertCalled(desc, obj, met, fn, data)
+```
+* **desc** - `Tekst, ki opisuje pogoj testa`
+* **obj** - `Kateri objekt bomo mockali`
+* **met** - `Katero metodo na objektu bomo mockali`
+* **fn** - `Funkcija s kodo`
+* **data** - `Optional: če podan, mockana metoda vrne data`
+
+###### Preverimo ali je koda podana v `fn` klicala metodo na podanem objektu in če jo je vrnemo `returnValue`. Kličemo `assertCalled` z podanim parametrom `data`
+```javascript
+assertCalledAndReturn(desc, obj, met, returnValue, fn)
+```
+* **desc** - `Tekst, ki opisuje pogoj testa`
+* **obj** - `Kateri objekt bomo mockali`
+* **met** - `Katero metodo na objektu bomo mockali`
+* **returnValue** - `Kaj naj mockana metoda vrne, ko je klicana`
+* **fn** - `Funkcija s kodo`
+
+###### Resetiramo vse mocke. Povrnemo objetke v prvotno stanje
+```javascript
+resetMocks
+```
+
+###### Resetiramo točno določen objetk in metodo
+```javascript
+resetMock(ob, fn)
+```
+* **ob** - `Objekt`
+* **met** - `Metoda`
