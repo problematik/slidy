@@ -256,4 +256,20 @@
     Zelim.izdatek = function(elem) {
         return Z.element(elem).value;
     }
+
+    /**
+     * Added functionality for calling the click method for the passed element on various browsers
+     *
+     * @param  elem DOMElement
+     */
+    Z.click = function(elem) {
+
+        if (elem.click) {
+            elem.click();
+        } else {
+            var evObj = document.createEvent('MouseEvents');
+            evObj.initMouseEvent('click', true, true, window);
+            elem.dispatchEvent(evObj);
+        }
+    }
 })();
