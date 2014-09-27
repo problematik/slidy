@@ -1,3 +1,11 @@
+#fps {
+	position: absolute;
+	z-index: 100;
+	top: 10px;
+	left: 10px;
+	font-size: 1.4em;
+	background-color: white;
+}
 .slidy-central {
 	width: 960px;
 	margin: 0 auto;

@@ -1,12 +1,31 @@
 (function(){
 
+	// TESTING STUFF - FPS meter
+	TIME_LAST = new Date();
+	TIME_NOW = new Date();
+
+	FPS_ELEMENT = null;
+	FPS_ENABLED = true;
+
+	function updateFps() {
+	    if(FPS_ENABLED) {
+	        TIME_NOW = new Date();
+	        var fps = 1000/(TIME_NOW - TIME_LAST);
+	        fps = Math.floor(fps * 100) /100;
+	        FPS_ELEMENT.innerHTML = "FPS: " + fps;
+	        TIME_LAST = TIME_NOW;
+	    }
+	}
+
 	/**
 	 * Preko tega objekta exposamo vse funkcionalnost, ki jo rabimo za delo na canvasu z sliderji
 	 *
 	 * @param data Podatki o aplikaciji
 	 */
 	var SliderCentral = function(data){
-
+		FPS_ELEMENT = document.createElement("div");
+		FPS_ELEMENT.id = "fps";
+		document.body.appendChild(FPS_ELEMENT);
 		this.data = data;
 		this.nastaviDefaultVrednosti();
 
@@ -319,7 +338,7 @@
 	SliderCentral.prototype.animate = function(id) {
 
 		this.requestAnimationFrameId = window.requestAnimationFrame(this.animate.bind(this));
-
+		updateFps();
 		if (this.editMode) {
 			if (this.premikajoci.needsUpdate) {
 				this.premikajoci.ponovnoIzrisi();
